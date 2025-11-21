@@ -1,0 +1,37 @@
+# ============================================
+# Dependencias del Proyecto Braille
+# Instalar con: pip install -r requirements.txt
+# ============================================
+
+# ===== FRAMEWORK WEB =====
+# Flask: Framework web ligero para Python
+Flask==3.0.0
+
+# Flask-CORS: Permite peticiones desde el frontend (necesario para desarrollo)
+Flask-CORS==4.0.0
+
+# ===== BASE DE DATOS =====
+# sqlite3 viene incluido en Python, no necesita instalación
+
+# ===== GENERACIÓN DE PDFs =====
+# ReportLab: Librería para crear PDFs programáticamente
+reportlab==4.0.7
+
+# ===== MANEJO DE IMÁGENES =====
+# Pillow: Para manipular imágenes (logos, iconos en PDFs)
+Pillow==10.1.0
+
+# ===== TESTING =====
+# pytest: Framework de pruebas unitarias
+pytest==7.4.3
+
+# pytest-cov: Para medir cobertura de código
+pytest-cov==4.1.0
+
+# ===== UTILIDADES =====
+# python-dotenv: Para cargar variables de entorno desde .env
+python-dotenv==1.0.0
+
+# ===== DESARROLLO (OPCIONAL) =====
+# Flask-DebugToolbar: Herramienta de debugging (solo desarrollo)
+# Flask-DebugToolbar==0.14.1

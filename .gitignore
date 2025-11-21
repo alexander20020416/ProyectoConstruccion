@@ -1,0 +1,114 @@
+# ============================================
+# Python .gitignore para Proyecto Braille
+# ============================================
+
+# ===== ENTORNOS VIRTUALES =====
+# No subir entornos virtuales (pesan mucho y son específicos de cada PC)
+venv/
+env/
+ENV/
+.venv/
+virtualenv/
+
+# ===== CACHE DE PYTHON =====
+# Python crea archivos compilados .pyc (no son necesarios en git)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# ===== BASE DE DATOS =====
+# No subir la BD con datos reales (solo la estructura)
+*.db
+*.sqlite
+*.sqlite3
+# Excepción: si quieres subir una BD vacía inicial, quita el comentario:
+# !backend/database/braille_initial.db
+
+# ===== ARCHIVOS GENERADOS =====
+# PDFs y outputs no van a git (se generan en tiempo de ejecución)
+output/*.pdf
+output/*.png
+output/*.jpg
+# Mantener la carpeta vacía en git:
+!output/.gitkeep
+
+# ===== CONFIGURACIONES LOCALES =====
+# Archivos de configuración con datos sensibles
+.env
+.env.local
+config.local.py
+instance/
+
+# ===== LOGS =====
+# Archivos de registro (pueden crecer mucho)
+*.log
+logs/
+*.log.*
+
+# ===== IDEs y Editores =====
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# ===== SISTEMA OPERATIVO =====
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.directory
+
+# ===== PYTEST Y COVERAGE =====
+# Resultados de pruebas
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.cover
+
+# ===== DISTRIBUCIÓN =====
+# Archivos de empaquetado Python
+build/
+dist/
+*.egg-info/
+*.egg
+
+# ===== TEMPORALES =====
+# Archivos temporales varios
+*.tmp
+*.bak
+*.swp
+*~.nib
+temp/
+tmp/
+
+# ===== NODE MODULES (si usas npm) =====
+# Si usas alguna herramienta de frontend con npm
+node_modules/
+package-lock.json
+
+# ===== DOCUMENTACIÓN GENERADA =====
+# JavaDoc o Sphinx (si generas docs automáticas)
+site/
+_build/
+
+# ===== ARCHIVOS GRANDES =====
+# PDFs de ejemplo muy pesados
+*.pdf
+!docs/*.pdf  # Excepto PDFs de documentación
