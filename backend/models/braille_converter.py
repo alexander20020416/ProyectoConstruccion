@@ -1,0 +1,452 @@
+"""
+Módulo de Conversión Braille
+============================
+Implementa la conversión bidireccional entre texto español y Braille
+siguiendo el sistema de lectoescritura braille español.
+
+Sistema de numeración de puntos:
+    1 • • 4
+    2 • • 5
+    3 • • 6
+
+Autor: GR4
+Fecha: Noviembre 2025
+"""
+
+from typing import Dict, List, Tuple, Optional
+
+
+class BrailleConverter:
+    """
+    Conversor bidireccional de texto español a Braille y viceversa.
+    
+    Implementa las tres series del sistema Braille:
+    - Serie 1 (a-j): Letras básicas
+    - Serie 2 (k-t): Serie 1 + punto 3
+    - Serie 3 (u-z): Serie 1 + puntos 3,6
+    """
+    
+    def __init__(self):
+        """Inicializa los mapeos de conversión Braille."""
+        self._init_alphabet_maps()
+        self._init_number_maps()
+        self._init_special_chars()
+        self._init_unicode_braille()
+    
+    def _init_alphabet_maps(self):
+        """
+        Inicializa el mapeo del abecedario español según las tres series.
+        Los puntos se representan como tuplas de números (1-6).
+        """
+        # SERIE 1: Letras a-j (matriz primitiva)
+        self.SERIE_1 = {
+            'a': (1,),           # •
+            'b': (1, 2),         # • •
+            'c': (1, 4),         # • 
+            'd': (1, 4, 5),      # • • •
+            'e': (1, 5),         # •   •
+            'f': (1, 2, 4),      # • •
+            'g': (1, 2, 4, 5),   # • • • •
+            'h': (1, 2, 5),      # • •   •
+            'i': (2, 4),         #   • •
+            'j': (2, 4, 5),      #   • • •
+        }
+        
+        # SERIE 2: Letras k-t (Serie 1 + punto 3)
+        self.SERIE_2 = {
+            'k': (1, 3),           # • 
+            'l': (1, 2, 3),        # • •
+            'm': (1, 3, 4),        # • 
+            'n': (1, 3, 4, 5),     # • • •
+            'o': (1, 3, 5),        # •   •
+            'p': (1, 2, 3, 4),     # • •
+            'q': (1, 2, 3, 4, 5),  # • • • •
+            'r': (1, 2, 3, 5),     # • •   •
+            's': (2, 3, 4),        #   • •
+            't': (2, 3, 4, 5),     #   • • •
+        }
+        
+        # SERIE 3: Letras u-z (Serie 1 + puntos 3,6)
+        self.SERIE_3 = {
+            'u': (1, 3, 6),           # • 
+            'v': (1, 2, 3, 6),        # • •
+            'x': (1, 3, 4, 6),        # • 
+            'y': (1, 3, 4, 5, 6),     # • • •
+            'z': (1, 3, 5, 6),        # •   •
+        }
+        
+        # Letra W (añadida posteriormente al braille francés)
+        self.EXTRA = {
+            'w': (2, 4, 5, 6),        #   • • •
+        }
+        
+        # Combinar todas las series
+        self.ALPHABET = {
+            **self.SERIE_1,
+            **self.SERIE_2,
+            **self.SERIE_3,
+            **self.EXTRA
+        }
+    
+    def _init_special_chars(self):
+        """Inicializa caracteres especiales del español."""
+        # Vocales acentuadas
+        self.ACCENTED_VOWELS = {
+            'á': (1, 2, 3, 5, 6),      # á
+            'é': (2, 3, 4, 6),         # é
+            'í': (3, 4),               # í
+            'ó': (3, 4, 6),            # ó
+            'ú': (2, 3, 4, 5, 6),      # ú
+        }
+        
+        # Caracteres adicionales español
+        self.SPANISH_SPECIAL = {
+            'ñ': (1, 2, 4, 5, 6),      # ñ
+            'ü': (1, 2, 5, 6),         # ü
+        }
+        
+        # Signos de puntuación y símbolos
+        self.PUNCTUATION = {
+            '.': (2, 5, 6),            # punto
+            ',': (2,),                 # coma
+            ';': (2, 3),               # punto y coma
+            ':': (2, 5),               # dos puntos
+            '?': (2, 6),               # interrogación
+            '¿': (2, 6),               # interrogación apertura (igual que cierre)
+            '!': (2, 3, 5),            # exclamación
+            '¡': (2, 3, 5),            # exclamación apertura
+            '-': (3, 6),               # guion
+            '(': (2, 3, 6),            # paréntesis apertura
+            ')': (3, 5, 6),            # paréntesis cierre
+            '"': (2, 3, 6),            # comillas
+            "'": (3,),                 # apóstrofo
+            ' ': tuple(),              # espacio en blanco
+        }
+        
+        # Combinar todos los caracteres especiales
+        self.SPECIAL_CHARS = {
+            **self.ACCENTED_VOWELS,
+            **self.SPANISH_SPECIAL,
+            **self.PUNCTUATION
+        }
+    
+    def _init_number_maps(self):
+        """
+        Inicializa el mapeo de números.
+        Los números usan el signo de número seguido de las letras de la serie 1.
+        """
+        # Signo de número (antepuesto a números)
+        self.NUMBER_SIGN = (3, 4, 5, 6)  # ⠼
+        
+        # Números del 0-9 (usan serie 1: a=1, b=2, ..., j=0)
+        self.NUMBERS = {
+            '1': (1,),           # a
+            '2': (1, 2),         # b
+            '3': (1, 4),         # c
+            '4': (1, 4, 5),      # d
+            '5': (1, 5),         # e
+            '6': (1, 2, 4),      # f
+            '7': (1, 2, 4, 5),   # g
+            '8': (1, 2, 5),      # h
+            '9': (2, 4),         # i
+            '0': (2, 4, 5),      # j
+        }
+    
+    def _init_unicode_braille(self):
+        """
+        Inicializa el mapeo a Unicode Braille (U+2800 a U+28FF).
+        Permite representar Braille en texto usando caracteres Unicode.
+        """
+        # Caracter base Braille en Unicode (sin puntos)
+        self.BRAILLE_UNICODE_BASE = 0x2800
+        
+        # Mapeo de puntos a offset Unicode
+        self.UNICODE_DOTS = {
+            1: 0x01, 2: 0x02, 3: 0x04, 4: 0x08,
+            5: 0x10, 6: 0x20, 7: 0x40, 8: 0x80
+        }
+    
+    def dots_to_unicode(self, dots: Tuple[int, ...]) -> str:
+        """
+        Convierte una tupla de puntos a su representación Unicode Braille.
+        
+        Args:
+            dots: Tupla de puntos activos (1-6)
+            
+        Returns:
+            Carácter Unicode Braille
+            
+        Ejemplo:
+            >>> dots_to_unicode((1, 2, 3))
+            '⠇'
+        """
+        if not dots:  # Espacio en blanco
+            return '⠀'  # Braille pattern blank
+        
+        unicode_value = self.BRAILLE_UNICODE_BASE
+        for dot in dots:
+            if 1 <= dot <= 8:
+                unicode_value += self.UNICODE_DOTS[dot]
+        
+        return chr(unicode_value)
+    
+    def unicode_to_dots(self, braille_char: str) -> Tuple[int, ...]:
+        """
+        Convierte un carácter Unicode Braille a tupla de puntos.
+        
+        Args:
+            braille_char: Carácter Unicode Braille
+            
+        Returns:
+            Tupla de puntos activos
+        """
+        if not braille_char or braille_char == '⠀':
+            return tuple()
+        
+        unicode_value = ord(braille_char) - self.BRAILLE_UNICODE_BASE
+        dots = []
+        
+        for dot_num, dot_value in self.UNICODE_DOTS.items():
+            if unicode_value & dot_value:
+                dots.append(dot_num)
+        
+        return tuple(sorted(dots))
+    
+    def text_to_braille(self, text: str, output_format: str = 'unicode') -> str:
+        """
+        Convierte texto español a Braille.
+        
+        Args:
+            text: Texto en español a convertir
+            output_format: Formato de salida ('unicode', 'dots', 'description')
+            
+        Returns:
+            Texto convertido a Braille según el formato especificado
+            
+        Ejemplo:
+            >>> text_to_braille("Hola")
+            '⠓⠕⠇⠁'
+            >>> text_to_braille("123")
+            '⠼⠁⠃⠉'
+        """
+        if not text:
+            return ""
+        
+        text = text.lower()  # Braille no distingue mayúsculas/minúsculas
+        result = []
+        in_number_mode = False
+        
+        i = 0
+        while i < len(text):
+            char = text[i]
+            
+            # Detectar números
+            if char.isdigit():
+                if not in_number_mode:
+                    # Añadir signo de número al inicio
+                    if output_format == 'unicode':
+                        result.append(self.dots_to_unicode(self.NUMBER_SIGN))
+                    elif output_format == 'dots':
+                        result.append(str(self.NUMBER_SIGN))
+                    else:
+                        result.append(f"[NUM]")
+                    in_number_mode = True
+                
+                dots = self.NUMBERS.get(char, tuple())
+                
+            # Espacio termina modo número
+            elif char == ' ':
+                in_number_mode = False
+                dots = tuple()
+                
+            # Letras y caracteres especiales
+            else:
+                in_number_mode = False
+                # Buscar en abecedario y caracteres especiales
+                dots = self.ALPHABET.get(char) or self.SPECIAL_CHARS.get(char)
+                
+                if dots is None:
+                    # Carácter no soportado, usar espacio
+                    dots = tuple()
+            
+            # Convertir según formato
+            if output_format == 'unicode':
+                result.append(self.dots_to_unicode(dots))
+            elif output_format == 'dots':
+                result.append(str(dots) if dots else '()')
+            else:  # description
+                result.append(f"{char}={dots}")
+            
+            i += 1
+        
+        return ''.join(result) if output_format == 'unicode' else ' '.join(result)
+    
+    def braille_to_text(self, braille: str) -> str:
+        """
+        Convierte Braille Unicode a texto español.
+        
+        Args:
+            braille: Texto en Braille Unicode
+            
+        Returns:
+            Texto en español
+            
+        Ejemplo:
+            >>> braille_to_text("⠓⠕⠇⠁")
+            'hola'
+        """
+        if not braille:
+            return ""
+        
+        # Crear mapeo inverso
+        inverse_map = {}
+        for char, dots in {**self.ALPHABET, **self.SPECIAL_CHARS}.items():
+            inverse_map[dots] = char
+        
+        # Mapeo inverso de números
+        inverse_numbers = {dots: num for num, dots in self.NUMBERS.items()}
+        
+        result = []
+        in_number_mode = False
+        
+        for braille_char in braille:
+            dots = self.unicode_to_dots(braille_char)
+            
+            # Detectar signo de número
+            if dots == self.NUMBER_SIGN:
+                in_number_mode = True
+                continue
+            
+            # Espacio termina modo número
+            if not dots:
+                in_number_mode = False
+                result.append(' ')
+                continue
+            
+            # Convertir según modo
+            if in_number_mode:
+                char = inverse_numbers.get(dots, '?')
+            else:
+                char = inverse_map.get(dots, '?')
+            
+            result.append(char)
+        
+        return ''.join(result)
+    
+    def get_braille_info(self, char: str) -> Optional[Dict]:
+        """
+        Obtiene información detallada sobre un carácter en Braille.
+        
+        Args:
+            char: Carácter a consultar
+            
+        Returns:
+            Diccionario con información del carácter
+        """
+        char = char.lower()
+        
+        # Buscar en todos los mapeos
+        dots = None
+        char_type = None
+        
+        if char in self.ALPHABET:
+            dots = self.ALPHABET[char]
+            if char in self.SERIE_1:
+                char_type = "Serie 1 (a-j)"
+            elif char in self.SERIE_2:
+                char_type = "Serie 2 (k-t)"
+            elif char in self.SERIE_3:
+                char_type = "Serie 3 (u-z)"
+            else:
+                char_type = "Letra extra"
+        elif char in self.SPECIAL_CHARS:
+            dots = self.SPECIAL_CHARS[char]
+            if char in self.ACCENTED_VOWELS:
+                char_type = "Vocal acentuada"
+            elif char in self.SPANISH_SPECIAL:
+                char_type = "Carácter especial español"
+            else:
+                char_type = "Signo de puntuación"
+        elif char.isdigit():
+            dots = self.NUMBERS[char]
+            char_type = "Número"
+        
+        if dots is None:
+            return None
+        
+        return {
+            'character': char,
+            'type': char_type,
+            'dots': dots,
+            'unicode': self.dots_to_unicode(dots),
+            'description': f"Puntos: {', '.join(map(str, dots))}"
+        }
+    
+    def validate_text(self, text: str) -> Tuple[bool, List[str]]:
+        """
+        Valida si un texto puede ser convertido completamente a Braille.
+        
+        Args:
+            text: Texto a validar
+            
+        Returns:
+            Tupla (es_válido, lista_de_caracteres_no_soportados)
+        """
+        text = text.lower()
+        unsupported = []
+        
+        for char in text:
+            if char.isdigit():
+                continue
+            if char in self.ALPHABET or char in self.SPECIAL_CHARS:
+                continue
+            if char not in unsupported:
+                unsupported.append(char)
+        
+        return (len(unsupported) == 0, unsupported)
+
+
+# Instancia global para uso en toda la aplicación
+braille_converter = BrailleConverter()
+
+
+if __name__ == "__main__":
+    # Pruebas rápidas
+    converter = BrailleConverter()
+    
+    print("=" * 60)
+    print("SISTEMA DE CONVERSIÓN BRAILLE - PRUEBAS")
+    print("=" * 60)
+    
+    # Prueba 1: Abecedario
+    print("\n1. Abecedario completo:")
+    alphabet_text = "abcdefghijklmnopqrstuvwxyz"
+    braille_alphabet = converter.text_to_braille(alphabet_text)
+    print(f"Texto:   {alphabet_text}")
+    print(f"Braille: {braille_alphabet}")
+    print(f"Vuelta:  {converter.braille_to_text(braille_alphabet)}")
+    
+    # Prueba 2: Números
+    print("\n2. Números:")
+    numbers_text = "12345 67890"
+    braille_numbers = converter.text_to_braille(numbers_text)
+    print(f"Texto:   {numbers_text}")
+    print(f"Braille: {braille_numbers}")
+    print(f"Vuelta:  {converter.braille_to_text(braille_numbers)}")
+    
+    # Prueba 3: Vocales acentuadas
+    print("\n3. Vocales acentuadas:")
+    accented_text = "aéiou"
+    braille_accented = converter.text_to_braille(accented_text)
+    print(f"Texto:   {accented_text}")
+    print(f"Braille: {braille_accented}")
+    
+    # Prueba 4: Español completo
+    print("\n4. Texto completo:")
+    full_text = "Hola España 2025"
+    braille_full = converter.text_to_braille(full_text)
+    print(f"Texto:   {full_text}")
+    print(f"Braille: {braille_full}")
+    print(f"Vuelta:  {converter.braille_to_text(braille_full)}")
+    
+    print("\n" + "=" * 60)
