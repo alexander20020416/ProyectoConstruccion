@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sistema de transcripción Braille - Convierte texto español a Braille y genera señalética">
+    <title>Sistema de Transcripción Braille</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1>⠎⠊⠎⠞⠑⠍⠁ ⠃⠗⠁⠊⠇⠇⠑</h1>
+                <p class="subtitle">Sistema de Transcripción Braille Español</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            
+            <!-- Tabs Navigation -->
+            <div class="tabs">
+                <button class="tab-button active" data-tab="converter">
+                    📝 Conversor
+                </button>
+                <button class="tab-button" data-tab="signage">
+                    🏢 Señalética
+                </button>
+                <button class="tab-button" data-tab="reference">
+                    📚 Referencia
+                </button>
+                <button class="tab-button" data-tab="history">
+                    🕒 Historial
+                </button>
+            </div>
+
+            <!-- Tab 1: Converter -->
+            <div id="converter" class="tab-content active">
+                <div class="card">
+                    <h2>Conversor de Texto ↔ Braille</h2>
+                    
+                    <!-- Conversion Mode Toggle -->
+                    <div class="mode-toggle">
+                        <button id="mode-text-to-braille" class="mode-button active">
+                            Español → Braille
+                        </button>
+                        <button id="mode-braille-to-text" class="mode-button">
+                            Braille → Español
+                        </button>
+                    </div>
+
+                    <!-- Text to Braille Mode -->
+                    <div id="text-to-braille-panel" class="conversion-panel">
+                        <div class="input-section">
+                            <label for="input-text">Texto en Español:</label>
+                            <textarea 
+                                id="input-text" 
+                                placeholder="Escribe tu texto aquí... (ejemplo: Hola mundo 123)"
+                                rows="6"
+                                maxlength="500"
+                            ></textarea>
+                            <div class="char-counter">
+                                <span id="char-count">0</span> / 500 caracteres
+                            </div>
+                        </div>
+
+                        <div class="actions">
+                            <button id="btn-convert-to-braille" class="btn btn-primary">
+                                Convertir a Braille
+                            </button>
+                            <button id="btn-clear-text" class="btn btn-secondary">
+                                Limpiar
+                            </button>
+                        </div>
+
+                        <div class="output-section">
+                            <label>Resultado en Braille:</label>
+                            <div id="output-braille" class="braille-output">
+                                El resultado aparecerá aquí...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Braille to Text Mode -->
+                    <div id="braille-to-text-panel" class="conversion-panel" style="display: none;">
+                        <div class="input-section">
+                            <label for="input-braille">Texto en Braille (Unicode):</label>
+                            <textarea 
+                                id="input-braille" 
+                                placeholder="Pega el texto en Braille aquí... (ejemplo: ⠓⠕⠇⠁)"
+                                rows="6"
+                            ></textarea>
+                        </div>
+
+                        <div class="actions">
+                            <button id="btn-convert-to-text" class="btn btn-primary">
+                                Convertir a Español
+                            </button>
+                            <button id="btn-clear-braille" class="btn btn-secondary">
+                                Limpiar
+                            </button>
+                        </div>
+
+                        <div class="output-section">
+                            <label>Resultado en Español:</label>
+                            <div id="output-text" class="text-output">
+                                El resultado aparecerá aquí...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Signage Generator -->
+            <div id="signage" class="tab-content">
+                <div class="card">
+                    <h2>Generador de Señalética Braille</h2>
+                    
+                    <div class="signage-options">
+                        <label>Tipo de Señalética:</label>
+                        <select id="signage-type" class="select">
+                            <option value="elevator">Ascensor (Números de piso)</option>
+                            <option value="door">Puerta (Oficina/Sala)</option>
+                            <option value="label">Etiqueta Personalizada</option>
+                        </select>
+                    </div>
+
+                    <!-- Elevator Signage -->
+                    <div id="elevator-form" class="signage-form">
+                        <h3>Señalética de Ascensor</h3>
+                        <div class="form-group">
+                            <label for="elevator-title">Título:</label>
+                            <input type="text" id="elevator-title" value="ASCENSOR" class="input">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Pisos:</label>
+                            <div id="floor-list">
+                                <div class="floor-item">
+                                    <input type="text" placeholder="Planta Baja" class="input floor-text">
+                                    <input type="text" placeholder="0" class="input floor-number">
+                                    <button class="btn btn-small btn-remove">✕</button>
+                                </div>
+                            </div>
+                            <button id="btn-add-floor" class="btn btn-secondary">+ Agregar Piso</button>
+                        </div>
+                    </div>
+
+                    <!-- Door Signage -->
+                    <div id="door-form" class="signage-form" style="display: none;">
+                        <h3>Señalética de Puerta</h3>
+                        <div class="form-group">
+                            <label for="door-name">Nombre:</label>
+                            <input type="text" id="door-name" placeholder="Oficina" class="input">
+                        </div>
+                        <div class="form-group">
+                            <label for="door-number">Número (opcional):</label>
+                            <input type="text" id="door-number" placeholder="205" class="input">
+                        </div>
+                    </div>
+
+                    <!-- Label Signage -->
+                    <div id="label-form" class="signage-form" style="display: none;">
+                        <h3>Etiqueta Personalizada</h3>
+                        <div class="form-group">
+                            <label for="label-text">Texto Principal:</label>
+                            <input type="text" id="label-text" placeholder="Salida" class="input">
+                        </div>
+                        <div class="form-group">
+                            <label for="label-subtitle">Subtítulo (opcional):</label>
+                            <input type="text" id="label-subtitle" placeholder="Emergencia" class="input">
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button id="btn-generate-pdf" class="btn btn-primary">
+                            📄 Generar PDF
+                        </button>
+                    </div>
+
+                    <div id="pdf-status" class="status-message"></div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Reference -->
+            <div id="reference" class="tab-content">
+                <div class="card">
+                    <h2>Tabla de Referencia Braille</h2>
+                    
+                    <div class="reference-section">
+                        <h3>Abecedario (a-z)</h3>
+                        <div class="braille-table" id="alphabet-table">
+                            <!-- Se generará con JavaScript -->
+                        </div>
+                    </div>
+
+                    <div class="reference-section">
+                        <h3>Números (0-9)</h3>
+                        <div class="braille-table" id="numbers-table">
+                            <!-- Se generará con JavaScript -->
+                        </div>
+                    </div>
+
+                    <div class="reference-section">
+                        <h3>Vocales Acentuadas</h3>
+                        <div class="braille-table" id="accented-table">
+                            <!-- Se generará con JavaScript -->
+                        </div>
+                    </div>
+
+                    <div class="reference-section">
+                        <h3>Sistema de Puntos</h3>
+                        <div class="dot-system">
+                            <pre>
+  ⠁  Cuadratín (6 puntos):
+       
+  1 • • 4
+  2 • • 5
+  3 • • 6
+                            </pre>
+                            <p>
+                                Cada carácter Braille se forma activando combinaciones específicas
+                                de estos 6 puntos en relieve.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 4: History -->
+            <div id="history" class="tab-content">
+                <div class="card">
+                    <h2>Historial de Conversiones</h2>
+                    
+                    <div class="actions">
+                        <button id="btn-refresh-history" class="btn btn-secondary">
+                            🔄 Actualizar
+                        </button>
+                        <select id="history-filter" class="select">
+                            <option value="">Todas las conversiones</option>
+                            <option value="text_to_braille">Español → Braille</option>
+                            <option value="braille_to_text">Braille → Español</option>
+                        </select>
+                    </div>
+
+                    <div id="history-list" class="history-list">
+                        <p class="loading">Cargando historial...</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Sistema de Transcripción Braille | Proyecto de Construcción de Software | GR4</p>
+            <p>
+                <a href="https://github.com/alexander20020416/ProyectoConstruccion" target="_blank">
+                    GitHub Repository
+                </a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Procesando...</p>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="notification">
+        <span id="notification-message"></span>
+        <button id="notification-close">✕</button>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/app.js"></script>
+</body>
+</html>
