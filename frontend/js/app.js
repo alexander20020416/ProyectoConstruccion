@@ -85,7 +85,114 @@ function initConverter() {
     document.getElementById('btn-convert-to-braille').addEventListener('click', convertToBraille);
     document.getElementById('btn-convert-to-text').addEventListener('click', convertToText);
     document.getElementById('btn-clear-text').addEventListener('click', clearTextPanel);
-    document.getElementById('btn-clear-braille').addEventListener('click', clearBraillePanel);
+    
+    // Braille Builder
+    initBrailleBuilder();
+}
+
+// === BRAILLE BUILDER ===
+let builderSequence = []; // Array de objetos {dots: [1,2,3], unicode: '⠇'}
+
+function initBrailleBuilder() {
+    const dotBuilders = document.querySelectorAll('.dot-builder');
+    let currentDots = [];
+    
+    // Click en puntos para activar/desactivar
+    dotBuilders.forEach(dot => {
+        dot.addEventListener('click', () => {
+            const dotNum = parseInt(dot.dataset.dot);
+            
+            if (currentDots.includes(dotNum)) {
+                // Desactivar
+                currentDots = currentDots.filter(d => d !== dotNum);
+                dot.classList.remove('active');
+            } else {
+                // Activar
+                currentDots.push(dotNum);
+                dot.classList.add('active');
+            }
+        });
+    });
+    
+    // Agregar carácter a la secuencia
+    document.getElementById('btn-add-char').addEventListener('click', () => {
+        // Convertir puntos actuales a Unicode Braille
+        const unicode = dotsToUnicode(currentDots);
+        
+        builderSequence.push({
+            dots: [...currentDots],
+            unicode: unicode
+        });
+        
+        updateSequenceDisplay();
+        
+        // Limpiar constructor
+        currentDots = [];
+        dotBuilders.forEach(dot => dot.classList.remove('active'));
+    });
+    
+    // Agregar espacio
+    document.getElementById('btn-add-space').addEventListener('click', () => {
+        builderSequence.push({
+            dots: [],
+            unicode: '⠀'
+        });
+        updateSequenceDisplay();
+    });
+    
+    // Limpiar celda actual
+    document.getElementById('btn-reset-builder').addEventListener('click', () => {
+        currentDots = [];
+        dotBuilders.forEach(dot => dot.classList.remove('active'));
+    });
+    
+    // Limpiar toda la secuencia
+    document.getElementById('btn-clear-sequence').addEventListener('click', () => {
+        builderSequence = [];
+        updateSequenceDisplay();
+    });
+}
+
+function dotsToUnicode(dots) {
+    const BRAILLE_BASE = 0x2800;
+    const dotOffsets = {
+        1: 0x01, 2: 0x02, 3: 0x04, 4: 0x08,
+        5: 0x10, 6: 0x20
+    };
+    
+    let offset = 0;
+    dots.forEach(dot => {
+        offset |= dotOffsets[dot];
+    });
+    
+    return String.fromCharCode(BRAILLE_BASE + offset);
+}
+
+function updateSequenceDisplay() {
+    const display = document.getElementById('braille-sequence-display');
+    
+    if (builderSequence.length === 0) {
+        display.innerHTML = '<p style="color: var(--text-secondary);">(vacío - construye caracteres arriba)</p>';
+        return;
+    }
+    
+    // Renderizar como celdas visuales igual que el otro conversor
+    let html = '';
+    builderSequence.forEach(item => {
+        html += '<div class="braille-cell">';
+        html += '<div class="braille-dots">';
+        
+        const brailleOrder = [1, 4, 2, 5, 3, 6];
+        brailleOrder.forEach(dotNumber => {
+            const isActive = item.dots.includes(dotNumber);
+            html += `<div class="braille-dot ${isActive ? 'active' : ''}"></div>`;
+        });
+        
+        html += '</div>';
+        html += '</div>';
+    });
+    
+    display.innerHTML = html;
 }
 
 async function convertToBraille() {
@@ -114,8 +221,8 @@ async function convertToBraille() {
         const data = await response.json();
         
         if (data.success) {
-            outputBraille.textContent = data.braille;
-            outputBraille.style.color = 'var(--braille-color)';
+            // Renderizar con cajas Braille
+            outputBraille.innerHTML = renderBrailleCells(data.dots_info);
             showNotification('✓ Conversión exitosa', 'success');
         } else {
             throw new Error(data.error || 'Error en la conversión');
@@ -130,14 +237,51 @@ async function convertToBraille() {
     }
 }
 
+function renderBrailleCells(dotsInfo) {
+    if (!dotsInfo || dotsInfo.length === 0) {
+        return 'El resultado aparecerá aquí...';
+    }
+    
+    let html = '<div class="braille-cells-container">';
+    
+    dotsInfo.forEach(item => {
+        if (item.type === 'space') {
+            html += '<div class="braille-space"></div>';
+        } else {
+            html += '<div class="braille-cell">';
+            html += '<div class="braille-dots">';
+            
+            // Crear la cuadrícula de 6 puntos en el orden correcto del sistema Braille
+            // Orden Braille:  1 4    Orden Grid: pos1 pos2
+            //                 2 5                pos3 pos4
+            //                 3 6                pos5 pos6
+            const brailleOrder = [1, 4, 2, 5, 3, 6];
+            
+            brailleOrder.forEach(dotNumber => {
+                const isActive = item.dots.includes(dotNumber);
+                html += `<div class="braille-dot ${isActive ? 'active' : ''}"></div>`;
+            });
+            
+            html += '</div>';
+            html += `<div class="braille-label">${escapeHtml(item.char)}</div>`;
+            html += '</div>';
+        }
+    });
+    
+    html += '</div>';
+    return html;
+}
+
 async function convertToText() {
-    const inputBraille = document.getElementById('input-braille').value.trim();
     const outputText = document.getElementById('output-text');
     
-    if (!inputBraille) {
-        showNotification('Por favor ingresa texto en Braille', 'warning');
+    // Construir string Unicode desde la secuencia
+    if (builderSequence.length === 0) {
+        showNotification('Por favor construye una secuencia Braille', 'warning');
         return;
     }
+    
+    const brailleString = builderSequence.map(item => item.unicode).join('');
     
     showLoading(true);
     
@@ -148,7 +292,7 @@ async function convertToText() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                braille: inputBraille
+                braille: brailleString
             })
         });
         
@@ -175,11 +319,6 @@ function clearTextPanel() {
     document.getElementById('input-text').value = '';
     document.getElementById('output-braille').textContent = 'El resultado aparecerá aquí...';
     document.getElementById('char-count').textContent = '0';
-}
-
-function clearBraillePanel() {
-    document.getElementById('input-braille').value = '';
-    document.getElementById('output-text').textContent = 'El resultado aparecerá aquí...';
 }
 
 // === SEÑALÉTICA ===
@@ -251,10 +390,15 @@ async function generatePDF() {
             }
             
             floorItems.forEach(item => {
-                const text = item.querySelector('.floor-text').value;
-                const number = item.querySelector('.floor-number').value;
-                if (text && number) {
-                    items.push({ text, number });
+                const text = item.querySelector('.floor-text').value.trim();
+                const number = item.querySelector('.floor-number').value.trim();
+                
+                // Aceptar si al menos uno de los dos campos tiene valor
+                if (text || number) {
+                    items.push({ 
+                        text: text || number,  // Si no hay texto, usar el número
+                        number: number || text  // Si no hay número, usar el texto
+                    });
                 }
             });
             
