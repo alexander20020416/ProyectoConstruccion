@@ -1,0 +1,187 @@
+@startuml Sistema_Transcripcion_Braille_Arquitectura
+
+title Sistema de Transcripción Braille - Arquitectura de Alto Nivel\nVersión 1.0.0 | Noviembre 2025
+
+skinparam {
+    BackgroundColor white
+    ArrowColor #2C3E50
+    BorderColor #34495E
+    packageBackgroundColor #ECF0F1
+    packageBorderColor #34495E
+    packageFontColor #2C3E50
+    componentBackgroundColor #3498DB
+    componentBorderColor #2980B9
+    componentFontColor white
+    databaseBackgroundColor #E74C3C
+    databaseBorderColor #C0392B
+    databaseFontColor white
+    nodeBackgroundColor #27AE60
+    nodeBorderColor #229954
+    nodeFontColor white
+}
+
+' ============================================
+' CAPA DE PRESENTACIÓN (FRONTEND)
+' ============================================
+package "Capa de Presentación" as Frontend #LightBlue {
+    
+    [index.html\n----\nInterfaz de Usuario\nTabs de Navegación\nFormularios\nConstructor Visual] as HTML #3498DB
+    
+    [styles.css\n----\nEstilos Responsivos\nGrid 2x3 Braille\nVariables CSS] as CSS #3498DB
+    
+    [app.js\n----\nFetch API\nGestión Estado\nValidación Cliente] as JS #3498DB
+    
+    HTML -down-> CSS : usa
+    HTML -down-> JS : ejecuta
+}
+
+' ============================================
+' CAPA DE APLICACIÓN (BACKEND)
+' ============================================
+package "Capa de Aplicación" as Backend #LightGreen {
+    
+    [run.py\n----\nFactory Pattern\nFlask Init\nCORS Config] as RunPy #27AE60
+    
+    package "routes" as Routes #Honeydew {
+        [braille_routes.py\n----\nPOST /convert/to-braille\nPOST /convert/to-text\nPOST /generate-signage\nGET /health] as APIRoutes #27AE60
+    }
+    
+    package "models" as Models #Honeydew {
+        [braille_converter.py\n----\nSERIE_1, SERIE_2, SERIE_3\ntext_to_braille()\nbraille_to_text()] as BrailleModel #27AE60
+    }
+    
+    package "utils" as Utils #Honeydew {
+        [pdf_generator.py\n----\ngenerate_signage_pdf()\ngenerate_elevator_sign()\n_draw_braille_character()] as PDFGen #27AE60
+    }
+    
+    package "database" as DBPackage #Honeydew {
+        [db_manager.py\n----\ninit_database()\nsave_conversion()\nget_history()] as DBManager #27AE60
+    }
+    
+    RunPy -down-> APIRoutes : registra blueprint
+    APIRoutes -down-> BrailleModel : usa
+    APIRoutes -down-> PDFGen : usa
+    APIRoutes -down-> DBManager : usa
+    PDFGen -down-> BrailleModel : usa
+}
+
+' ============================================
+' CAPA DE DATOS
+' ============================================
+package "Capa de Datos" as DataLayer #LightCoral {
+    
+    database "braille_system.db" as DB #E74C3C {
+    }
+    
+    note right of DB
+      **SQLite3 Tables**
+      • conversions (historial)
+      • pdf_generations (registros)
+      • settings (config)
+    end note
+    
+    DBManager -down-> DB : CRUD Operations
+}
+
+' ============================================
+' CAPA DE ALMACENAMIENTO
+' ============================================
+package "Sistema de Archivos" as FileSystem #LightGray {
+    folder "output/" as OutputFolder
+    note right of OutputFolder
+      PDFs generados
+      senaletica_braille_*.pdf
+    end note
+    PDFGen -down-> OutputFolder : escribe
+}
+
+' ============================================
+' USUARIO Y NAVEGADOR
+' ============================================
+actor "Usuario" as User
+[Navegador Web\n----\nChrome/Firefox/Edge\nJavaScript Engine\nHTML/CSS Render] as Browser #9B59B6
+
+User -right-> Browser : interactúa
+Browser -down-> Frontend : HTTP GET
+Frontend -down-> Backend : HTTP POST/GET\n(JSON)
+Backend -up-> Frontend : JSON Response
+
+' ============================================
+' LIBRERÍAS EXTERNAS
+' ============================================
+package "Dependencias Externas" as External #Wheat {
+    [Flask 3.0.0] as Flask #F39C12
+    [Flask-CORS 4.0.0] as CORS #F39C12
+    [ReportLab 4.0.7] as ReportLab #F39C12
+    [SQLite3] as SQLite #F39C12
+    
+    RunPy ..> Flask : usa
+    RunPy ..> CORS : usa
+    PDFGen ..> ReportLab : usa
+    DBManager ..> SQLite : usa
+}
+
+' ============================================
+' FLUJO DE DATOS PRINCIPAL
+' ============================================
+note right of Frontend
+  **Conversión Texto → Braille**
+  1. Usuario ingresa texto
+  2. JS valida caracteres
+  3. POST /api/convert/to-braille
+  4. BrailleConverter procesa
+  5. Retorna Unicode + dots_info
+  6. Frontend renderiza resultado
+end note
+
+note right of PDFGen
+  **Generación de Señalética**
+  1. Usuario configura etiquetas
+  2. POST /api/generate-signage
+  3. Convierte textos a Braille
+  4. Dibuja círculos (1.5mm)
+  5. ReportLab genera PDF
+  6. Guarda en output/
+  7. Retorna archivo para descarga
+end note
+
+' ============================================
+' TESTING
+' ============================================
+package "Testing" as Testing #LavenderBlush {
+    [test_braille_converter.py\n----\npytest\ntest_text_to_braille()\ntest_uppercase()\ntest_numbers()] as Tests #9B59B6
+    
+    Tests ..> BrailleModel : verifica
+}
+
+' ============================================
+' NOTAS TÉCNICAS
+' ============================================
+legend bottom
+  **Stack Tecnológico**
+  • Backend: Python 3.12 + Flask 3.0.0
+  • Frontend: HTML5 + CSS3 + Vanilla JavaScript
+  • BD: SQLite3 (embebida)
+  • PDF: ReportLab 4.0.7
+  • Testing: pytest 7.4.3
+  
+  **Patrones de Diseño**
+  • Factory Pattern (create_app)
+  • Singleton (db_manager)
+  • Blueprint (rutas modulares)
+  
+  **Características Braille**
+  • 6 puntos (2×3)
+  • Unicode U+2800-U+28FF
+  • Mayúsculas: (4,6) antes de cada letra
+  • Números: (3,4,5,6) activa modo
+  • Puntuación: mapeo español
+  
+  **Seguridad**
+  • CORS configurado
+  • Validación doble (frontend + backend)
+  • Límite 16MB uploads
+  • Secret key configurable
+endlegend
+
+@enduml
