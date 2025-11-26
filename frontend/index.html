@@ -87,21 +87,41 @@
 
                     <!-- Braille to Text Mode -->
                     <div id="braille-to-text-panel" class="conversion-panel" style="display: none;">
-                        <div class="input-section">
-                            <label for="input-braille">Texto en Braille (Unicode):</label>
-                            <textarea 
-                                id="input-braille" 
-                                placeholder="Pega el texto en Braille aquí... (ejemplo: ⠓⠕⠇⠁)"
-                                rows="6"
-                            ></textarea>
+                        <div class="braille-input-builder">
+                            <label>Constructor de Caracteres Braille:</label>
+                            <p class="help-text">Haz clic en los puntos para activar/desactivar y construir cada carácter Braille</p>
+                            
+                            <div class="braille-builder-container">
+                                <div class="braille-cell-builder">
+                                    <div class="braille-dots-builder">
+                                        <div class="dot-builder" data-dot="1"></div>
+                                        <div class="dot-builder" data-dot="4"></div>
+                                        <div class="dot-builder" data-dot="2"></div>
+                                        <div class="dot-builder" data-dot="5"></div>
+                                        <div class="dot-builder" data-dot="3"></div>
+                                        <div class="dot-builder" data-dot="6"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="builder-actions">
+                                    <button id="btn-add-char" class="btn btn-sm">Agregar Carácter</button>
+                                    <button id="btn-add-space" class="btn btn-sm">Espacio</button>
+                                    <button id="btn-reset-builder" class="btn btn-sm btn-secondary">Limpiar Celda</button>
+                                </div>
+                            </div>
+                            
+                            <div class="braille-sequence">
+                                <label>Secuencia Braille construida:</label>
+                                <div id="braille-sequence-display" class="braille-cells-container">
+                                    <p style="color: var(--text-secondary);">(vacío - construye caracteres arriba)</p>
+                                </div>
+                                <button id="btn-clear-sequence" class="btn btn-sm btn-secondary">Limpiar Todo</button>
+                            </div>
                         </div>
 
                         <div class="actions">
                             <button id="btn-convert-to-text" class="btn btn-primary">
                                 Convertir a Español
-                            </button>
-                            <button id="btn-clear-braille" class="btn btn-secondary">
-                                Limpiar
                             </button>
                         </div>
 
