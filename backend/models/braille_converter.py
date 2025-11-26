@@ -107,7 +107,7 @@ class BrailleConverter:
         
         # Signos de puntuación y símbolos
         self.PUNCTUATION = {
-            '.': (2, 5, 6),            # punto
+            '.': (3,),                 # punto (punto 3 - esquina inferior izquierda)
             ',': (2,),                 # coma
             ';': (2, 3),               # punto y coma
             ':': (2, 5),               # dos puntos
@@ -115,11 +115,21 @@ class BrailleConverter:
             '¿': (2, 6),               # interrogación apertura (igual que cierre)
             '!': (2, 3, 5),            # exclamación
             '¡': (2, 3, 5),            # exclamación apertura
-            '-': (3, 6),               # guion
+            '-': (3, 6),               # guion / resta
+            '−': (3, 6),               # signo menos (matemático)
+            '–': (3, 6),               # guion medio (en dash)
+            '—': (3, 6),               # guion largo (em dash)
+            '_': (3, 6),               # guion bajo (underscore)
             '(': (2, 3, 6),            # paréntesis apertura
             ')': (3, 5, 6),            # paréntesis cierre
             '"': (2, 3, 6),            # comillas
             "'": (3,),                 # apóstrofo
+            '=': (2, 3, 5, 6),         # signo igual (4 puntos de abajo)
+            '/': (2, 5, 6),            # división (barra)
+            '÷': (2, 5, 6),            # división (símbolo)
+            '+': (2, 3, 5),            # suma / más
+            '×': (2, 3, 6),               # multiplicación
+            '*': (2, 3, 6),               # asterisco / multiplicación
             ' ': tuple(),              # espacio en blanco
         }
         
@@ -137,6 +147,12 @@ class BrailleConverter:
         """
         # Signo de número (antepuesto a números)
         self.NUMBER_SIGN = (3, 4, 5, 6)  # ⠼
+        
+        # Cuadratín (espacio sin puntos - caja vacía)
+        self.QUADRATIN = tuple()  # ⠀ (sin puntos)
+        
+        # Indicador de mayúscula (antepuesto a letras mayúsculas)
+        self.CAPITAL_SIGN = (4, 6)  # ⠨ (puntos 4 y 6)
         
         # Números del 0-9 (usan serie 1: a=1, b=2, ..., j=0)
         self.NUMBERS = {
@@ -225,20 +241,30 @@ class BrailleConverter:
             
         Ejemplo:
             >>> text_to_braille("Hola")
-            '⠓⠕⠇⠁'
+            '⠨⠓⠀⠕⠇⠁'
             >>> text_to_braille("123")
             '⠼⠁⠃⠉'
         """
         if not text:
             return ""
         
-        text = text.lower()  # Braille no distingue mayúsculas/minúsculas
         result = []
         in_number_mode = False
         
         i = 0
         while i < len(text):
             char = text[i]
+            char_lower = char.lower()
+            
+            # Detectar letra mayúscula - agregar indicador antes de cada una
+            if char.isupper() and char.isalpha():
+                # Agregar indicador de mayúscula antes de la letra
+                if output_format == 'unicode':
+                    result.append(self.dots_to_unicode(self.CAPITAL_SIGN))
+                elif output_format == 'dots':
+                    result.append(str(self.CAPITAL_SIGN))
+                else:
+                    result.append(f"[MAY]")
             
             # Detectar números
             if char.isdigit():
@@ -261,13 +287,22 @@ class BrailleConverter:
                 
             # Letras y caracteres especiales
             else:
-                in_number_mode = False
-                # Buscar en abecedario y caracteres especiales
-                dots = self.ALPHABET.get(char) or self.SPECIAL_CHARS.get(char)
-                
-                if dots is None:
-                    # Carácter no soportado, usar espacio
-                    dots = tuple()
+                # TANTO la coma COMO el punto mantienen el modo numérico si hay dígitos después
+                if char in (',', '.')and in_number_mode:
+                    if i + 1 < len(text) and text[i + 1].isdigit():
+                        dots = self.PUNCTUATION.get(char, tuple())
+                    else:
+                        in_number_mode = False
+                        dots = self.PUNCTUATION.get(char, tuple())
+                else:
+                    # Cualquier otro carácter termina modo numérico
+                    in_number_mode = False
+                    # Buscar en abecedario y caracteres especiales (usar minúscula)
+                    dots = self.ALPHABET.get(char_lower) or self.SPECIAL_CHARS.get(char_lower)
+                    
+                    if dots is None:
+                        # Carácter no soportado, usar espacio
+                        dots = tuple()
             
             # Convertir según formato
             if output_format == 'unicode':
@@ -280,6 +315,75 @@ class BrailleConverter:
             i += 1
         
         return ''.join(result) if output_format == 'unicode' else ' '.join(result)
+    
+    def text_to_braille_dots(self, text: str) -> list:
+        """
+        Convierte texto español a una lista de tuplas de puntos Braille.
+        Útil para renderizado visual o generación de PDFs.
+        
+        Args:
+            text: Texto en español a convertir
+            
+        Returns:
+            Lista de tuplas de puntos, cada tupla representa un carácter Braille
+            
+        Ejemplo:
+            >>> text_to_braille_dots("Hola")
+            [(4,6), (1,2,5), (), (1,3,5), (1,), (1,)]
+        """
+        if not text:
+            return []
+        
+        result = []
+        in_number_mode = False
+        
+        i = 0
+        while i < len(text):
+            char = text[i]
+            char_lower = char.lower()
+            
+            # Detectar letra mayúscula - agregar indicador antes de cada una
+            if char.isupper() and char.isalpha():
+                # Agregar indicador de mayúscula antes de la letra
+                result.append(self.CAPITAL_SIGN)
+            
+            # Detectar números
+            if char.isdigit():
+                if not in_number_mode:
+                    # Añadir signo de número al inicio
+                    result.append(self.NUMBER_SIGN)
+                    in_number_mode = True
+                
+                dots = self.NUMBERS.get(char, tuple())
+                
+            # Espacio termina modo número
+            elif char == ' ':
+                in_number_mode = False
+                dots = tuple()
+                
+            # Letras y caracteres especiales
+            else:
+                # TANTO la coma COMO el punto mantienen el modo numérico si hay dígitos después
+                if char in (',', '.') and in_number_mode:
+                    if i + 1 < len(text) and text[i + 1].isdigit():
+                        dots = self.PUNCTUATION.get(char, tuple())
+                    else:
+                        in_number_mode = False
+                        dots = self.PUNCTUATION.get(char, tuple())
+                else:
+                    # Cualquier otro carácter termina modo numérico
+                    in_number_mode = False
+                    # Buscar en abecedario y caracteres especiales (usar minúscula)
+                    dots = self.ALPHABET.get(char_lower) or self.SPECIAL_CHARS.get(char_lower)
+                    
+                    if dots is None:
+                        # Carácter no soportado, usar espacio
+                        dots = tuple()
+            
+            result.append(dots)
+            i += 1
+        
+        return result
     
     def braille_to_text(self, braille: str) -> str:
         """
@@ -298,38 +402,90 @@ class BrailleConverter:
         if not braille:
             return ""
         
-        # Crear mapeo inverso
+        # Crear mapeo inverso completo (letras, vocales acentuadas, ñ, ü)
         inverse_map = {}
         for char, dots in {**self.ALPHABET, **self.SPECIAL_CHARS}.items():
             inverse_map[dots] = char
+        
+        # Agregar puntuación
+        for char, dots in self.PUNCTUATION.items():
+            if dots not in inverse_map:  # No sobrescribir si ya existe
+                inverse_map[dots] = char
         
         # Mapeo inverso de números
         inverse_numbers = {dots: num for num, dots in self.NUMBERS.items()}
         
         result = []
         in_number_mode = False
+        next_is_capital = False
         
-        for braille_char in braille:
+        i = 0
+        while i < len(braille):
+            braille_char = braille[i]
             dots = self.unicode_to_dots(braille_char)
+            
+            # Detectar indicador de mayúscula
+            if dots == self.CAPITAL_SIGN:
+                next_is_capital = True
+                i += 1
+                continue
             
             # Detectar signo de número
             if dots == self.NUMBER_SIGN:
                 in_number_mode = True
+                i += 1
                 continue
             
             # Espacio termina modo número
             if not dots:
                 in_number_mode = False
                 result.append(' ')
+                i += 1
                 continue
             
             # Convertir según modo
             if in_number_mode:
-                char = inverse_numbers.get(dots, '?')
+                # En modo número: convertir dígitos
+                if dots in inverse_numbers:
+                    char = inverse_numbers[dots]
+                    result.append(char)
+                # Coma o punto dentro de números se mantienen en modo número
+                elif dots in [self.PUNCTUATION.get(','), self.PUNCTUATION.get('.')]:
+                    # Verificar si hay más dígitos después
+                    if i + 1 < len(braille):
+                        next_dots = self.unicode_to_dots(braille[i + 1])
+                        if next_dots in inverse_numbers:
+                            # Mantener modo número y agregar el separador
+                            char = inverse_map.get(dots, '?')
+                            result.append(char)
+                        else:
+                            # Terminar modo número
+                            in_number_mode = False
+                            char = inverse_map.get(dots, '?')
+                            result.append(char)
+                    else:
+                        # Fin de cadena, terminar modo número
+                        in_number_mode = False
+                        char = inverse_map.get(dots, '?')
+                        result.append(char)
+                else:
+                    # Cualquier otro carácter termina el modo número
+                    in_number_mode = False
+                    char = inverse_map.get(dots, '?')
+                    if next_is_capital and char != '?':
+                        char = char.upper()
+                        next_is_capital = False
+                    result.append(char)
             else:
+                # Modo normal: convertir letras y símbolos
                 char = inverse_map.get(dots, '?')
+                # Aplicar mayúscula si corresponde
+                if next_is_capital and char != '?':
+                    char = char.upper()
+                    next_is_capital = False
+                result.append(char)
             
-            result.append(char)
+            i += 1
         
         return ''.join(result)
     
