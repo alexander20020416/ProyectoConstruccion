@@ -100,18 +100,18 @@ class BrailleSignagePDFGenerator:
         """
         current_x = x
         
-        for char in text.lower():
-            # Obtener información del carácter
-            info = braille_converter.get_braille_info(char)
-            
-            if info is None:
-                # Espacio o carácter no soportado
+        # Convertir texto a braille usando el convertidor completo
+        # Esto maneja números, mayúsculas, indicadores, etc.
+        braille_dots_list = braille_converter.text_to_braille_dots(text)
+        
+        for dots_tuple in braille_dots_list:
+            if dots_tuple == tuple():
+                # Espacio en blanco - solo avanzar sin dibujar celda
                 current_x += char_spacing
-                continue
-            
-            # Dibujar carácter
-            self._draw_braille_character(c, current_x, y, info['dots'])
-            current_x += char_spacing
+            else:
+                # Dibujar carácter con sus puntos
+                self._draw_braille_character(c, current_x, y, dots_tuple)
+                current_x += char_spacing
     
     def generate_elevator_signage(self, title: str, items: list, 
                                  filename: str = None) -> str:
@@ -293,15 +293,26 @@ class BrailleSignagePDFGenerator:
             c.setFont("Helvetica", 14)
             c.drawCentredString(width / 2, height - 5*cm, subtitle)
         
-        # Braille (grande y centrado)
-        braille_y = height / 2
+        # Braille del texto principal (centrado)
+        braille_y = height / 2 + 1*cm if subtitle else height / 2
         
-        # Calcular centrado
+        # Calcular centrado para texto principal
         char_count = len(text)
         total_width = char_count * 25
         braille_x = (width - total_width) / 2
         
         self._draw_braille_text(c, braille_x, braille_y, text, char_spacing=25)
+        
+        # Braille del subtítulo (si existe)
+        if subtitle:
+            braille_y_subtitle = height / 2 - 2*cm
+            
+            # Calcular centrado para subtítulo
+            char_count_subtitle = len(subtitle)
+            total_width_subtitle = char_count_subtitle * 20
+            braille_x_subtitle = (width - total_width_subtitle) / 2
+            
+            self._draw_braille_text(c, braille_x_subtitle, braille_y_subtitle, subtitle, char_spacing=20)
         
         # Pie de página
         c.setFont("Helvetica-Oblique", 10)
