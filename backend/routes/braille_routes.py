@@ -85,14 +85,83 @@ def convert_to_braille():
         is_valid, unsupported_chars = braille_converter.validate_text(input_text)
         
         if not is_valid:
+            # Mostrar los códigos Unicode de los caracteres no soportados
+            char_details = [f"'{c}' (U+{ord(c):04X})" for c in unsupported_chars]
             return jsonify({
                 'success': False,
                 'error': 'Texto contiene caracteres no soportados',
-                'unsupported_characters': unsupported_chars
+                'unsupported_characters': unsupported_chars,
+                'character_codes': char_details
             }), 400
         
         # Convertir a Braille
         braille_output = braille_converter.text_to_braille(input_text, output_format)
+        
+        # Obtener información de puntos para visualización
+        dots_info = []
+        in_number_mode = False
+        
+        i = 0
+        while i < len(input_text):
+            char = input_text[i]
+            char_lower = char.lower()
+            
+            # Detectar letra mayúscula - agregar indicador antes de cada una
+            if char.isupper() and char.isalpha():
+                dots_info.append({
+                    'char': '⠨',
+                    'dots': list(braille_converter.CAPITAL_SIGN),
+                    'type': 'capital_sign'
+                })
+            
+            if char.isdigit():
+                if not in_number_mode:
+                    # Agregar indicador numérico
+                    dots_info.append({
+                        'char': '#',
+                        'dots': list(braille_converter.NUMBER_SIGN),
+                        'type': 'number_sign'
+                    })
+                    in_number_mode = True
+                dots = braille_converter.NUMBERS.get(char, tuple())
+                dots_info.append({
+                    'char': char,
+                    'dots': list(dots),
+                    'type': 'number'
+                })
+            elif char == ' ':
+                in_number_mode = False
+                dots_info.append({
+                    'char': ' ',
+                    'dots': [],
+                    'type': 'space'
+                })
+            else:
+                # Tanto coma como punto mantienen el modo numérico si hay dígitos después
+                if char in (',', '.') and in_number_mode and i + 1 < len(input_text) and input_text[i + 1].isdigit():
+                    dots = braille_converter.PUNCTUATION.get(char, tuple())
+                    dots_info.append({
+                        'char': char,
+                        'dots': list(dots),
+                        'type': 'punctuation'
+                    })
+                else:
+                    in_number_mode = False
+                    dots = braille_converter.ALPHABET.get(char_lower) or braille_converter.SPECIAL_CHARS.get(char_lower)
+                    if dots:
+                        char_type = 'letter' if char_lower in braille_converter.ALPHABET else 'special'
+                        dots_info.append({
+                            'char': char_lower,
+                            'dots': list(dots),
+                            'type': char_type
+                        })
+                    else:
+                        dots_info.append({
+                            'char': char,
+                            'dots': [],
+                            'type': 'unknown'
+                        })
+            i += 1
         
         # Guardar en base de datos
         db_manager.save_conversion(
@@ -105,6 +174,7 @@ def convert_to_braille():
             'success': True,
             'input_text': input_text,
             'braille': braille_output,
+            'dots_info': dots_info,
             'format': output_format,
             'character_count': len(input_text),
             'timestamp': datetime.now().isoformat()
@@ -254,10 +324,19 @@ def generate_signage():
                 'error': 'Debe proporcionar al menos un elemento'
             }), 400
         
+        # Convertir todos los valores a string para evitar errores de tipo
+        items_normalized = []
+        for item in items:
+            normalized_item = {}
+            for key, value in item.items():
+                # Convertir cualquier valor a string
+                normalized_item[key] = str(value) if value is not None else ''
+            items_normalized.append(normalized_item)
+        
         # Generar PDF
         pdf_path = generate_signage_pdf(
-            title=title,
-            items=items,
+            title=str(title),
+            items=items_normalized,
             format_type=signage_format
         )
         
