@@ -390,7 +390,8 @@ def generate_pdf_text():
     
     Request Body:
         {
-            "text": "Texto a convertir a Braille"
+            "text": "Texto a convertir a Braille",
+            "mirror": false  // opcional: true para espejo (escritura manual)
         }
     
     Response:
@@ -406,6 +407,7 @@ def generate_pdf_text():
             }), 400
         
         text = data['text'].strip()
+        mirror = data.get('mirror', False)  # Modo espejo para escritura manual
         
         if not text:
             return jsonify({
@@ -416,8 +418,21 @@ def generate_pdf_text():
         # Importar el generador de PDF
         from backend.utils.pdf_generator import pdf_generator
         
-        # Generar PDF con texto libre
-        pdf_path = pdf_generator.generate_text_pdf(text)
+        # Generar PDF según el modo seleccionado
+        if mirror:
+            pdf_path = pdf_generator.generate_text_pdf_mirror(text)
+            filename_prefix = 'braille_espejo'
+        else:
+            pdf_path = pdf_generator.generate_text_pdf(text)
+            filename_prefix = 'braille'
+        
+        # Enviar archivo
+        return send_file(
+            pdf_path,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f'{filename_prefix}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
+        )
         
         # Enviar archivo
         return send_file(
