@@ -478,6 +478,32 @@ function initReference() {
     generateAlphabetTable();
     generateNumbersTable();
     generateAccentedTable();
+    generatePunctuationTable();
+}
+
+// Función auxiliar para crear celda Braille visual con 6 puntos
+function createBrailleCell(dots, label) {
+    // dots es un array de números [1,2,3,4,5,6] indicando qué puntos están activos
+    const activeDots = new Set(dots);
+    
+    // Orden de los puntos en la cuadrícula: 1,4,2,5,3,6 (columna izq, columna der)
+    const dotOrder = [1, 4, 2, 5, 3, 6];
+    
+    let dotsHTML = '';
+    for (let dot of dotOrder) {
+        const isActive = activeDots.has(dot);
+        dotsHTML += `<div class="braille-dot-ref ${isActive ? 'active' : ''}"></div>`;
+    }
+    
+    const item = document.createElement('div');
+    item.className = 'braille-item-visual';
+    item.innerHTML = `
+        <div class="braille-cell-ref">
+            ${dotsHTML}
+        </div>
+        <span class="char-label">${label}</span>
+    `;
+    return item;
 }
 
 async function generateAlphabetTable() {
@@ -490,12 +516,7 @@ async function generateAlphabetTable() {
             const data = await response.json();
             
             if (data.success) {
-                const item = document.createElement('div');
-                item.className = 'braille-item';
-                item.innerHTML = `
-                    <span class="braille-char">${data.unicode}</span>
-                    <span class="char-label">${char}</span>
-                `;
+                const item = createBrailleCell(data.dots, char);
                 table.appendChild(item);
             }
         } catch (error) {
@@ -508,23 +529,14 @@ async function generateNumbersTable() {
     const table = document.getElementById('numbers-table');
     const numbers = '0123456789';
     
-    // Generar números mediante conversión
+    // Generar números usando braille/info para obtener solo el símbolo del número (sin indicador)
     for (let num of numbers) {
         try {
-            const response = await fetch(`${API_BASE_URL}/convert/to-braille`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: num, format: 'unicode' })
-            });
+            const response = await fetch(`${API_BASE_URL}/braille/info/${num}`);
             const data = await response.json();
             
             if (data.success) {
-                const item = document.createElement('div');
-                item.className = 'braille-item';
-                item.innerHTML = `
-                    <span class="braille-char">${data.braille}</span>
-                    <span class="char-label">${num}</span>
-                `;
+                const item = createBrailleCell(data.dots, num);
                 table.appendChild(item);
             }
         } catch (error) {
@@ -543,12 +555,33 @@ async function generateAccentedTable() {
             const data = await response.json();
             
             if (data.success) {
-                const item = document.createElement('div');
-                item.className = 'braille-item';
-                item.innerHTML = `
-                    <span class="braille-char">${data.unicode}</span>
-                    <span class="char-label">${char}</span>
-                `;
+                const item = createBrailleCell(data.dots, char);
+                table.appendChild(item);
+            }
+        } catch (error) {
+            console.error(`Error al obtener ${char}:`, error);
+        }
+    }
+}
+
+async function generatePunctuationTable() {
+    const table = document.getElementById('punctuation-table');
+    
+    // Agregar el punto manualmente primero (tiene problemas con la URL)
+    // Punto = puntos [3]
+    const dotItem = createBrailleCell([3], '.');
+    table.appendChild(dotItem);
+    
+    // Resto de signos de puntuación
+    const punctuation = [',', ';', ':', '?', '¿', '!', '¡', '-', '(', ')', '"', '=', '+', '/', '*'];
+    
+    for (let char of punctuation) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/braille/info/${encodeURIComponent(char)}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                const item = createBrailleCell(data.dots, char);
                 table.appendChild(item);
             }
         } catch (error) {

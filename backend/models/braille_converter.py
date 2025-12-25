@@ -120,8 +120,8 @@ class BrailleConverter:
             '–': (3, 6),               # guion medio (en dash)
             '—': (3, 6),               # guion largo (em dash)
             '_': (3, 6),               # guion bajo (underscore)
-            '(': (2, 3, 6),            # paréntesis apertura
-            ')': (3, 5, 6),            # paréntesis cierre
+            '(': (1, 2, 6),            # paréntesis apertura
+            ')': (3, 4, 5),            # paréntesis cierre
             '"': (2, 3, 6),            # comillas
             "'": (3,),                 # apóstrofo
             '=': (2, 3, 5, 6),         # signo igual (4 puntos de abajo)

@@ -242,7 +242,7 @@ def convert_to_text():
         }), 500
 
 
-@braille_bp.route('/braille/info/<char>', methods=['GET'])
+@braille_bp.route('/braille/info/<path:char>', methods=['GET'])
 def get_character_info(char):
     """
     Obtiene información detallada sobre un carácter en Braille.

@@ -266,20 +266,18 @@ textarea {
 
 .braille-dots {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 16px);
+    grid-template-rows: repeat(3, 16px);
     gap: 6px;
-    padding: 8px;
+    padding: 10px;
     background: white;
     border: 2px solid var(--text-primary);
     border-radius: 4px;
-    width: 40px;
-    height: 60px;
 }
 
 .braille-dot {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     background: transparent;
     border: 2px solid var(--text-secondary);
@@ -812,5 +810,54 @@ textarea {
         box-shadow: none;
         border: 1px solid #000;
     }
+}
+
+/* === Celda Braille Visual para Referencia === */
+.braille-cell-ref {
+    display: grid;
+    grid-template-columns: repeat(2, 14px);
+    grid-template-rows: repeat(3, 14px);
+    gap: 4px;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+}
+
+.braille-cell-ref .braille-dot-ref {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background-color: #e2e8f0;
+    border: 2px solid #cbd5e1;
+}
+
+.braille-cell-ref .braille-dot-ref.active {
+    background-color: #1e293b;
+    border-color: #1e293b;
+}
+
+.braille-item-visual {
+    background: var(--braille-bg);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 1rem;
+    text-align: center;
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 70px;
+}
+
+.braille-item-visual:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.braille-item-visual .char-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    margin-top: 0.25rem;
 }
 
