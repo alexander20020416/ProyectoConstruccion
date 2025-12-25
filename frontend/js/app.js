@@ -624,6 +624,10 @@ async function generatePDF() {
     const pdfStatus = document.getElementById('pdf-status');
     const text = document.getElementById('signage-text').value.trim();
     
+    // Obtener el modo seleccionado (normal o espejo)
+    const pdfModeRadio = document.querySelector('input[name="pdf-mode"]:checked');
+    const isMirror = pdfModeRadio ? pdfModeRadio.value === 'mirror' : false;
+    
     pdfStatus.textContent = '';
     pdfStatus.classList.remove('show');
     
@@ -640,7 +644,10 @@ async function generatePDF() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ text: text })
+            body: JSON.stringify({ 
+                text: text,
+                mirror: isMirror  // Enviar si es modo espejo
+            })
         });
         
         if (response.ok) {
@@ -649,14 +656,16 @@ async function generatePDF() {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `braille_${Date.now()}.pdf`;
+            const prefix = isMirror ? 'braille_espejo' : 'braille';
+            a.download = `${prefix}_${Date.now()}.pdf`;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
             
-            showNotification('✓ PDF generado exitosamente', 'success');
-            pdfStatus.textContent = '✓ PDF descargado correctamente';
+            const modeText = isMirror ? '(modo espejo)' : '(modo normal)';
+            showNotification(`✓ PDF generado exitosamente ${modeText}`, 'success');
+            pdfStatus.textContent = `✓ PDF descargado correctamente ${modeText}`;
             pdfStatus.className = 'status-message success show';
         } else {
             const error = await response.json();
