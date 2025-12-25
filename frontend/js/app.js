@@ -91,6 +91,8 @@ function initConverter() {
 
 // === BRAILLE BUILDER ===
 let builderSequence = []; // Array de objetos {dots: [1,2,3], unicode: '⠇'}
+let selectedCellIndex = -1; // Índice de la celda seleccionada (-1 = ninguna)
+let insertMode = false; // Si estamos en modo insertar
 
 function initBrailleBuilder() {
     const dotBuilders = document.querySelectorAll('.dot-builder');
@@ -118,10 +120,20 @@ function initBrailleBuilder() {
         // Convertir puntos actuales a Unicode Braille
         const unicode = dotsToUnicode(currentDots);
         
-        builderSequence.push({
+        const newCell = {
             dots: [...currentDots],
             unicode: unicode
-        });
+        };
+        
+        // Si estamos en modo insertar, insertar antes de la celda seleccionada
+        if (insertMode && selectedCellIndex >= 0) {
+            builderSequence.splice(selectedCellIndex, 0, newCell);
+            insertMode = false;
+            selectedCellIndex = -1;
+            showNotification('Carácter insertado', 'success');
+        } else {
+            builderSequence.push(newCell);
+        }
         
         updateSequenceDisplay();
         
@@ -132,10 +144,19 @@ function initBrailleBuilder() {
     
     // Agregar espacio
     document.getElementById('btn-add-space').addEventListener('click', () => {
-        builderSequence.push({
+        const newCell = {
             dots: [],
             unicode: '⠀'
-        });
+        };
+        
+        if (insertMode && selectedCellIndex >= 0) {
+            builderSequence.splice(selectedCellIndex, 0, newCell);
+            insertMode = false;
+            selectedCellIndex = -1;
+            showNotification('Espacio insertado', 'success');
+        } else {
+            builderSequence.push(newCell);
+        }
         updateSequenceDisplay();
     });
     
@@ -148,7 +169,86 @@ function initBrailleBuilder() {
     // Limpiar toda la secuencia
     document.getElementById('btn-clear-sequence').addEventListener('click', () => {
         builderSequence = [];
+        selectedCellIndex = -1;
+        insertMode = false;
         updateSequenceDisplay();
+    });
+    
+    // Eliminar celda seleccionada
+    document.getElementById('btn-delete-selected').addEventListener('click', () => {
+        if (selectedCellIndex >= 0 && selectedCellIndex < builderSequence.length) {
+            builderSequence.splice(selectedCellIndex, 1);
+            selectedCellIndex = -1;
+            insertMode = false;
+            updateSequenceDisplay();
+            showNotification('Celda eliminada', 'success');
+        }
+    });
+    
+    // Insertar antes de la celda seleccionada
+    document.getElementById('btn-insert-before').addEventListener('click', () => {
+        if (selectedCellIndex >= 0) {
+            insertMode = true;
+            showNotification('Modo insertar activado - Construye el carácter y presiona "Agregar"', 'info');
+            updateSequenceDisplay();
+        }
+    });
+    
+    // === BOTONES RÁPIDOS ===
+    
+    // Agregar indicador de mayúscula (puntos 4,6)
+    document.getElementById('btn-add-capital').addEventListener('click', () => {
+        const newCell = {
+            dots: [4, 6],
+            unicode: '⠨'
+        };
+        
+        if (insertMode && selectedCellIndex >= 0) {
+            builderSequence.splice(selectedCellIndex, 0, newCell);
+            insertMode = false;
+            selectedCellIndex = -1;
+            showNotification('Indicador de mayúscula insertado', 'success');
+        } else {
+            builderSequence.push(newCell);
+            showNotification('Indicador de mayúscula agregado', 'success');
+        }
+        updateSequenceDisplay();
+    });
+    
+    // Agregar indicador de número (puntos 3,4,5,6)
+    document.getElementById('btn-add-number').addEventListener('click', () => {
+        const newCell = {
+            dots: [3, 4, 5, 6],
+            unicode: '⠼'
+        };
+        
+        if (insertMode && selectedCellIndex >= 0) {
+            builderSequence.splice(selectedCellIndex, 0, newCell);
+            insertMode = false;
+            selectedCellIndex = -1;
+            showNotification('Indicador de número insertado', 'success');
+        } else {
+            builderSequence.push(newCell);
+            showNotification('Indicador de número agregado', 'success');
+        }
+        updateSequenceDisplay();
+    });
+    
+    // Mostrar modal de signos de puntuación
+    document.getElementById('btn-show-punctuation').addEventListener('click', () => {
+        showPunctuationModal();
+    });
+    
+    // Cerrar modal
+    document.getElementById('btn-close-modal').addEventListener('click', () => {
+        closePunctuationModal();
+    });
+    
+    // Cerrar modal al hacer clic fuera
+    document.getElementById('punctuation-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'punctuation-modal') {
+            closePunctuationModal();
+        }
     });
 }
 
@@ -169,16 +269,33 @@ function dotsToUnicode(dots) {
 
 function updateSequenceDisplay() {
     const display = document.getElementById('braille-sequence-display');
+    const sequenceInfo = document.getElementById('sequence-info');
+    const btnDelete = document.getElementById('btn-delete-selected');
+    const btnInsert = document.getElementById('btn-insert-before');
     
     if (builderSequence.length === 0) {
         display.innerHTML = '<p style="color: var(--text-secondary);">(vacío - construye caracteres arriba)</p>';
+        sequenceInfo.textContent = '';
+        btnDelete.disabled = true;
+        btnInsert.disabled = true;
+        selectedCellIndex = -1;
+        insertMode = false;
         return;
     }
     
-    // Renderizar como celdas visuales igual que el otro conversor
+    // Actualizar info de secuencia
+    let infoText = `(${builderSequence.length} celdas)`;
+    if (insertMode) {
+        infoText += ' - MODO INSERTAR';
+    }
+    sequenceInfo.textContent = infoText;
+    
+    // Renderizar como celdas visuales seleccionables
     let html = '';
-    builderSequence.forEach(item => {
-        html += '<div class="braille-cell">';
+    builderSequence.forEach((item, index) => {
+        const isSelected = index === selectedCellIndex;
+        html += `<div class="braille-cell selectable ${isSelected ? 'selected' : ''}" data-index="${index}">`;
+        html += `<span class="cell-index">${index + 1}</span>`;
         html += '<div class="braille-dots">';
         
         const brailleOrder = [1, 4, 2, 5, 3, 6];
@@ -192,6 +309,110 @@ function updateSequenceDisplay() {
     });
     
     display.innerHTML = html;
+    
+    // Actualizar estado de botones
+    btnDelete.disabled = selectedCellIndex < 0;
+    btnInsert.disabled = selectedCellIndex < 0;
+    
+    // Agregar eventos de clic a las celdas
+    display.querySelectorAll('.braille-cell.selectable').forEach(cell => {
+        cell.addEventListener('click', () => {
+            const index = parseInt(cell.dataset.index);
+            
+            // Toggle selección
+            if (selectedCellIndex === index) {
+                selectedCellIndex = -1;
+                insertMode = false;
+            } else {
+                selectedCellIndex = index;
+            }
+            
+            updateSequenceDisplay();
+        });
+    });
+}
+
+// === MODAL DE SIGNOS DE PUNTUACIÓN ===
+const PUNCTUATION_SIGNS = [
+    { char: '.', name: 'Punto', dots: [3] },
+    { char: ',', name: 'Coma', dots: [2] },
+    { char: ';', name: 'Punto y coma', dots: [2, 3] },
+    { char: ':', name: 'Dos puntos', dots: [2, 5] },
+    { char: '?', name: 'Interrogación (cierre)', dots: [2, 6] },
+    { char: '¿', name: 'Interrogación (apertura)', dots: [2, 6] },
+    { char: '!', name: 'Exclamación (cierre)', dots: [2, 3, 5] },
+    { char: '¡', name: 'Exclamación (apertura)', dots: [2, 3, 5] },
+    { char: '-', name: 'Guión', dots: [3, 6] },
+    { char: '(', name: 'Paréntesis (abre)', dots: [1, 2, 6] },
+    { char: ')', name: 'Paréntesis (cierra)', dots: [3, 4, 5] },
+    { char: '"', name: 'Comillas', dots: [2, 3, 6] },
+    { char: "'", name: 'Apóstrofo', dots: [3] },
+    { char: '*', name: 'Asterisco', dots: [3, 5] },
+    { char: '@', name: 'Arroba', dots: [4, 7] }
+];
+
+function showPunctuationModal() {
+    const modal = document.getElementById('punctuation-modal');
+    const grid = document.getElementById('punctuation-grid');
+    
+    // Generar contenido del grid
+    let html = '';
+    PUNCTUATION_SIGNS.forEach(sign => {
+        html += `<div class="punctuation-item" data-dots="${sign.dots.join(',')}" data-char="${sign.char}">`;
+        html += createBrailleCellRef(sign.dots);
+        html += `<span class="sign-label">${sign.char}</span>`;
+        html += `<span class="sign-name">${sign.name}</span>`;
+        html += '</div>';
+    });
+    
+    grid.innerHTML = html;
+    
+    // Agregar eventos de clic a cada signo
+    grid.querySelectorAll('.punctuation-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const dots = item.dataset.dots.split(',').map(d => parseInt(d));
+            const char = item.dataset.char;
+            
+            const newCell = {
+                dots: dots,
+                unicode: dotsToUnicode(dots)
+            };
+            
+            // Si estamos en modo insertar, insertar antes
+            if (insertMode && selectedCellIndex >= 0) {
+                builderSequence.splice(selectedCellIndex, 0, newCell);
+                insertMode = false;
+                selectedCellIndex = -1;
+                showNotification(`Signo "${char}" insertado`, 'success');
+            } else {
+                builderSequence.push(newCell);
+                showNotification(`Signo "${char}" agregado`, 'success');
+            }
+            
+            updateSequenceDisplay();
+            closePunctuationModal();
+        });
+    });
+    
+    modal.classList.add('active');
+}
+
+function closePunctuationModal() {
+    document.getElementById('punctuation-modal').classList.remove('active');
+}
+
+// Crear celda Braille visual para el modal (usa clases -ref)
+function createBrailleCellRef(activeDots) {
+    const brailleOrder = [1, 4, 2, 5, 3, 6];
+    let html = '<div class="braille-cell-ref"><div class="braille-dots-grid">';
+    
+    brailleOrder.forEach(dotNumber => {
+        const isActive = activeDots.includes(dotNumber);
+        html += `<div class="braille-dot-ref ${isActive ? 'active' : ''}"></div>`;
+    });
+    
+    html += '</div></div>';
+    return html;
 }
 
 async function convertToBraille() {
@@ -298,9 +519,35 @@ async function convertToText() {
         const data = await response.json();
         
         if (data.success) {
-            outputText.textContent = data.text;
-            outputText.style.color = 'var(--text-primary)';
-            showNotification('✓ Conversión exitosa', 'success');
+            // Verificar si la traducción es válida
+            if (data.valid === false) {
+                // Traducción inválida - mostrar mensaje de error
+                let errorHtml = '<div class="translation-error">';
+                errorHtml += '<strong>⚠️ Traducción inválida</strong><br>';
+                
+                if (data.errors && data.errors.length > 0) {
+                    errorHtml += '<ul class="error-list">';
+                    data.errors.forEach(err => {
+                        errorHtml += `<li>${err}</li>`;
+                    });
+                    errorHtml += '</ul>';
+                }
+                
+                if (data.text) {
+                    errorHtml += `<p class="partial-result">Resultado parcial: "${data.text}"</p>`;
+                }
+                
+                errorHtml += '</div>';
+                
+                outputText.innerHTML = errorHtml;
+                outputText.style.color = 'var(--warning-color)';
+                showNotification('La secuencia Braille contiene errores', 'warning');
+            } else {
+                // Traducción válida
+                outputText.textContent = data.text;
+                outputText.style.color = 'var(--text-primary)';
+                showNotification('✓ Conversión exitosa', 'success');
+            }
         } else {
             throw new Error(data.error || 'Error en la conversión');
         }
