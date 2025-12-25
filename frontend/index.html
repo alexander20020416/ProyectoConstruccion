@@ -110,12 +110,37 @@
                                 </div>
                             </div>
                             
+                            <!-- Botones rápidos de indicadores y signos -->
+                            <div class="quick-buttons">
+                                <label>Agregar rápido:</label>
+                                <div class="quick-buttons-row">
+                                    <button id="btn-add-capital" class="btn btn-sm btn-quick" title="Indicador de Mayúscula (puntos 4,6)">
+                                        ⠨ Mayúscula
+                                    </button>
+                                    <button id="btn-add-number" class="btn btn-sm btn-quick" title="Indicador de Número (puntos 3,4,5,6)">
+                                        ⠼ Número
+                                    </button>
+                                    <button id="btn-show-punctuation" class="btn btn-sm btn-quick" title="Ver signos de puntuación">
+                                        ✎ Signos
+                                    </button>
+                                </div>
+                            </div>
+                            
                             <div class="braille-sequence">
-                                <label>Secuencia Braille construida:</label>
+                                <label>Secuencia Braille construida: <span id="sequence-info" class="sequence-info"></span></label>
+                                <p class="help-text-small">Haz clic en una celda para seleccionarla y editarla</p>
                                 <div id="braille-sequence-display" class="braille-cells-container">
                                     <p style="color: var(--text-secondary);">(vacío - construye caracteres arriba)</p>
                                 </div>
-                                <button id="btn-clear-sequence" class="btn btn-sm btn-secondary">Limpiar Todo</button>
+                                <div class="sequence-actions">
+                                    <button id="btn-insert-before" class="btn btn-sm btn-edit" title="Insertar antes de la celda seleccionada" disabled>
+                                        ← Insertar Antes
+                                    </button>
+                                    <button id="btn-delete-selected" class="btn btn-sm btn-danger" title="Eliminar celda seleccionada" disabled>
+                                        🗑 Eliminar
+                                    </button>
+                                    <button id="btn-clear-sequence" class="btn btn-sm btn-secondary">Limpiar Todo</button>
+                                </div>
                             </div>
                         </div>
 
@@ -272,6 +297,22 @@
     <div id="notification" class="notification">
         <span id="notification-message"></span>
         <button id="notification-close">✕</button>
+    </div>
+
+    <!-- Modal de Signos de Puntuación -->
+    <div id="punctuation-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Signos de Puntuación</h3>
+                <button id="btn-close-modal" class="btn-close-modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <p class="help-text">Haz clic en un signo para agregarlo a la secuencia Braille</p>
+                <div id="punctuation-grid" class="punctuation-grid">
+                    <!-- Se llenará con JavaScript -->
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- JavaScript -->
