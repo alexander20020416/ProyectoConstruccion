@@ -322,6 +322,115 @@ class BrailleSignagePDFGenerator:
         c.save()
         return filepath
 
+    def generate_text_pdf(self, text: str, filename: str = None) -> str:
+        """
+        Genera un PDF con texto en Braille solamente.
+        El texto se distribuye eficientemente en la hoja, sin desperdiciar espacio.
+        
+        Args:
+            text: Texto a convertir (puede ser palabras o párrafos)
+            filename: Nombre del archivo (opcional)
+            
+        Returns:
+            Ruta del PDF generado
+        """
+        if filename is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"braille_{timestamp}.pdf"
+        
+        filepath = os.path.join(self.output_dir, filename)
+        
+        c = canvas.Canvas(filepath, pagesize=A4)
+        width, height = A4
+        
+        # Márgenes
+        margin_left = 1.5 * cm
+        margin_right = 1.5 * cm
+        margin_top = 1.5 * cm
+        margin_bottom = 1.5 * cm
+        
+        # Área útil
+        usable_width = width - margin_left - margin_right
+        
+        # Configuración de caracteres Braille - MÁS GRANDES
+        char_spacing = 22      # Espacio entre caracteres (aumentado)
+        line_spacing = 45      # Espacio entre líneas (aumentado)
+        dot_size = 3.5         # Tamaño del punto (aumentado)
+        dot_spacing = 8        # Espacio entre puntos en el carácter (aumentado)
+        
+        # Calcular cuántos caracteres caben por línea
+        chars_per_line = int(usable_width / char_spacing)
+        
+        # Posición inicial (esquina superior izquierda del área útil)
+        x_start = margin_left
+        y_position = height - margin_top
+        
+        # Convertir todo el texto a Braille
+        braille_dots_list = braille_converter.text_to_braille_dots(text)
+        
+        # Dibujar caracteres Braille
+        current_x = x_start
+        char_count = 0
+        
+        # Mapear caracteres del texto original para detectar saltos de línea
+        text_index = 0
+        in_number_mode = False
+        skip_next_increment = False
+        
+        for i, dots_tuple in enumerate(braille_dots_list):
+            # Verificar si necesitamos nueva línea por ancho
+            if char_count >= chars_per_line:
+                current_x = x_start
+                y_position -= line_spacing
+                char_count = 0
+                
+                # Verificar si necesitamos nueva página
+                if y_position < margin_bottom + line_spacing:
+                    c.showPage()
+                    y_position = height - margin_top
+            
+            # Detectar si el carácter original era un salto de línea
+            if text_index < len(text) and text[text_index] == '\n':
+                current_x = x_start
+                y_position -= line_spacing
+                char_count = 0
+                text_index += 1
+                
+                # Verificar si necesitamos nueva página
+                if y_position < margin_bottom + line_spacing:
+                    c.showPage()
+                    y_position = height - margin_top
+                continue
+            
+            if dots_tuple == tuple():
+                # Espacio en blanco - avanzar sin dibujar
+                current_x += char_spacing
+                char_count += 1
+                text_index += 1
+            else:
+                # Verificar si es un indicador (mayúscula o número)
+                is_capital_sign = dots_tuple == braille_converter.CAPITAL_SIGN
+                is_number_sign = dots_tuple == braille_converter.NUMBER_SIGN
+                
+                # Dibujar carácter Braille
+                self._draw_braille_character(c, current_x, y_position, dots_tuple, 
+                                            dot_size=dot_size, spacing=dot_spacing)
+                current_x += char_spacing
+                char_count += 1
+                
+                # Solo incrementar text_index si NO es un indicador
+                if not is_capital_sign and not is_number_sign:
+                    text_index += 1
+        
+        # Pie de página discreto
+        c.setFont("Helvetica-Oblique", 7)
+        c.setFillColor(colors.grey)
+        c.drawRightString(width - margin_right, margin_bottom - 5, 
+                         f"Sistema Braille - {datetime.now().strftime('%d/%m/%Y')}")
+        
+        c.save()
+        return filepath
+
 
 # Instancia global
 pdf_generator = BrailleSignagePDFGenerator()

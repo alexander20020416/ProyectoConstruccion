@@ -12,7 +12,6 @@ const API_BASE_URL = window.location.origin + '/api';
 
 // === ESTADO GLOBAL ===
 let currentMode = 'text-to-braille';
-let currentSignageType = 'elevator';
 
 // === INICIALIZACIÓN ===
 document.addEventListener('DOMContentLoaded', function() {
@@ -321,126 +320,80 @@ function clearTextPanel() {
     document.getElementById('char-count').textContent = '0';
 }
 
-// === SEÑALÉTICA ===
+// === SEÑALÉTICA / PDF ===
 function initSignage() {
-    const signageType = document.getElementById('signage-type');
-    const elevatorForm = document.getElementById('elevator-form');
-    const doorForm = document.getElementById('door-form');
-    const labelForm = document.getElementById('label-form');
-    
-    signageType.addEventListener('change', (e) => {
-        currentSignageType = e.target.value;
-        
-        // Ocultar todos los formularios
-        elevatorForm.style.display = 'none';
-        doorForm.style.display = 'none';
-        labelForm.style.display = 'none';
-        
-        // Mostrar formulario seleccionado
-        if (currentSignageType === 'elevator') {
-            elevatorForm.style.display = 'block';
-        } else if (currentSignageType === 'door') {
-            doorForm.style.display = 'block';
-        } else if (currentSignageType === 'label') {
-            labelForm.style.display = 'block';
-        }
-    });
-    
-    // Botón agregar piso
-    document.getElementById('btn-add-floor').addEventListener('click', addFloor);
-    
-    // Listener para eliminar pisos (delegación de eventos)
-    document.getElementById('floor-list').addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-remove')) {
-            e.target.closest('.floor-item').remove();
-        }
-    });
+    // Botón vista previa
+    document.getElementById('btn-preview-pdf').addEventListener('click', previewBraille);
     
     // Botón generar PDF
     document.getElementById('btn-generate-pdf').addEventListener('click', generatePDF);
+    
+    // Botón limpiar
+    document.getElementById('btn-clear-signage').addEventListener('click', () => {
+        document.getElementById('signage-text').value = '';
+        document.getElementById('pdf-preview').style.display = 'none';
+        document.getElementById('pdf-preview-content').innerHTML = '';
+    });
 }
 
-function addFloor() {
-    const floorList = document.getElementById('floor-list');
-    const floorItem = document.createElement('div');
-    floorItem.className = 'floor-item';
-    floorItem.innerHTML = `
-        <input type="text" placeholder="Nombre del piso" class="input floor-text">
-        <input type="text" placeholder="Número" class="input floor-number">
-        <button class="btn btn-small btn-remove">✕</button>
-    `;
-    floorList.appendChild(floorItem);
+async function previewBraille() {
+    const text = document.getElementById('signage-text').value.trim();
+    const previewSection = document.getElementById('pdf-preview');
+    const previewContent = document.getElementById('pdf-preview-content');
+    
+    if (!text) {
+        showNotification('Por favor ingresa un texto', 'warning');
+        return;
+    }
+    
+    try {
+        showLoading(true);
+        
+        const response = await fetch(`${API_BASE_URL}/convert/to-braille`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text, format: 'unicode' })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Mostrar vista previa con celdas visuales
+            previewContent.innerHTML = renderBrailleCells(data.dots_info);
+            previewSection.style.display = 'block';
+            showNotification('Vista previa generada', 'success');
+        } else {
+            throw new Error(data.error || 'Error en la conversión');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification(error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
 }
 
 async function generatePDF() {
     const pdfStatus = document.getElementById('pdf-status');
+    const text = document.getElementById('signage-text').value.trim();
+    
     pdfStatus.textContent = '';
     pdfStatus.classList.remove('show');
     
-    let items = [];
-    let title = '';
+    if (!text) {
+        showNotification('Por favor ingresa un texto', 'warning');
+        return;
+    }
     
     try {
-        if (currentSignageType === 'elevator') {
-            title = document.getElementById('elevator-title').value || 'ASCENSOR';
-            const floorItems = document.querySelectorAll('.floor-item');
-            
-            if (floorItems.length === 0) {
-                throw new Error('Agrega al menos un piso');
-            }
-            
-            floorItems.forEach(item => {
-                const text = item.querySelector('.floor-text').value.trim();
-                const number = item.querySelector('.floor-number').value.trim();
-                
-                // Aceptar si al menos uno de los dos campos tiene valor
-                if (text || number) {
-                    items.push({ 
-                        text: text || number,  // Si no hay texto, usar el número
-                        number: number || text  // Si no hay número, usar el texto
-                    });
-                }
-            });
-            
-        } else if (currentSignageType === 'door') {
-            const doorName = document.getElementById('door-name').value;
-            const doorNumber = document.getElementById('door-number').value;
-            
-            if (!doorName) {
-                throw new Error('Ingresa el nombre de la puerta');
-            }
-            
-            title = doorName;
-            items = [{ text: doorName, number: doorNumber }];
-            
-        } else if (currentSignageType === 'label') {
-            const labelText = document.getElementById('label-text').value;
-            const labelSubtitle = document.getElementById('label-subtitle').value;
-            
-            if (!labelText) {
-                throw new Error('Ingresa el texto de la etiqueta');
-            }
-            
-            title = labelText;
-            items = [{ text: labelText, subtitle: labelSubtitle }];
-        }
-        
-        if (items.length === 0) {
-            throw new Error('No hay elementos para generar el PDF');
-        }
-        
         showLoading(true);
         
-        const response = await fetch(`${API_BASE_URL}/generate-signage`, {
+        const response = await fetch(`${API_BASE_URL}/generate-pdf`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                title: title,
-                items: items,
-                format: currentSignageType
-            })
+            body: JSON.stringify({ text: text })
         });
         
         if (response.ok) {
@@ -449,7 +402,7 @@ async function generatePDF() {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `senaletica_braille_${Date.now()}.pdf`;
+            a.download = `braille_${Date.now()}.pdf`;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);

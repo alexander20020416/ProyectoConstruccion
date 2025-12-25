@@ -362,6 +362,57 @@ def generate_signage():
         }), 500
 
 
+@braille_bp.route('/generate-pdf', methods=['POST'])
+def generate_pdf_text():
+    """
+    Genera un PDF con texto libre en Braille.
+    
+    Request Body:
+        {
+            "text": "Texto a convertir a Braille"
+        }
+    
+    Response:
+        Archivo PDF para descarga
+    """
+    try:
+        data = request.get_json()
+        
+        if not data or 'text' not in data:
+            return jsonify({
+                'success': False,
+                'error': 'Campo "text" es requerido'
+            }), 400
+        
+        text = data['text'].strip()
+        
+        if not text:
+            return jsonify({
+                'success': False,
+                'error': 'El texto no puede estar vacío'
+            }), 400
+        
+        # Importar el generador de PDF
+        from backend.utils.pdf_generator import pdf_generator
+        
+        # Generar PDF con texto libre
+        pdf_path = pdf_generator.generate_text_pdf(text)
+        
+        # Enviar archivo
+        return send_file(
+            pdf_path,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f'braille_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
+        )
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Error al generar PDF: {str(e)}'
+        }), 500
+
+
 @braille_bp.route('/history', methods=['GET'])
 def get_conversion_history():
     """
