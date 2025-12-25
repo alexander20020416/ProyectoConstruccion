@@ -431,6 +431,110 @@ class BrailleSignagePDFGenerator:
         c.save()
         return filepath
 
+    def generate_text_pdf_mirror(self, text: str, filename: str = None) -> str:
+        """
+        Genera un PDF con texto en Braille ESPEJADO para escritura manual.
+        
+        La escritura manual Braille se realiza de derecha a izquierda con punzón,
+        perforando el papel desde atrás. Por esto:
+        1. El texto completo se invierte (última letra primero)
+        2. Cada celda se espeja horizontalmente (puntos 1↔4, 2↔5, 3↔6)
+        
+        Al voltear la hoja, el texto quedará correctamente orientado.
+        
+        Args:
+            text: Texto a convertir (puede ser palabras o párrafos)
+            filename: Nombre del archivo (opcional)
+            
+        Returns:
+            Ruta del PDF generado
+        """
+        if filename is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"braille_espejo_{timestamp}.pdf"
+        
+        filepath = os.path.join(self.output_dir, filename)
+        
+        c = canvas.Canvas(filepath, pagesize=A4)
+        width, height = A4
+        
+        # Márgenes
+        margin_left = 1.5 * cm
+        margin_right = 1.5 * cm
+        margin_top = 1.5 * cm
+        margin_bottom = 1.5 * cm
+        
+        # Área útil
+        usable_width = width - margin_left - margin_right
+        
+        # Configuración de caracteres Braille - MÁS GRANDES
+        char_spacing = 22      # Espacio entre caracteres
+        line_spacing = 45      # Espacio entre líneas
+        dot_size = 3.5         # Tamaño del punto
+        dot_spacing = 8        # Espacio entre puntos en el carácter
+        
+        # Calcular cuántos caracteres caben por línea
+        chars_per_line = int(usable_width / char_spacing)
+        
+        # Título indicando que es espejo
+        c.setFont("Helvetica-Bold", 12)
+        c.setFillColor(colors.black)
+        c.drawCentredString(width / 2, height - margin_top + 0.3*cm, 
+                           "🪞 MODO ESPEJO - Para escritura manual con punzón")
+        
+        c.setFont("Helvetica-Oblique", 9)
+        c.setFillColor(colors.grey)
+        c.drawCentredString(width / 2, height - margin_top - 0.3*cm, 
+                           "Texto invertido: escribir de derecha a izquierda")
+        
+        # Posición inicial
+        x_start = margin_left
+        y_position = height - margin_top - 1*cm
+        
+        # Convertir texto a Braille en espejo (invertido y cada celda espejada)
+        braille_dots_list = braille_converter.text_to_braille_dots_mirror(text)
+        
+        # Dibujar caracteres Braille
+        current_x = x_start
+        char_count = 0
+        
+        for dots_tuple in braille_dots_list:
+            # Verificar si necesitamos nueva línea por ancho
+            if char_count >= chars_per_line:
+                current_x = x_start
+                y_position -= line_spacing
+                char_count = 0
+                
+                # Verificar si necesitamos nueva página
+                if y_position < margin_bottom + line_spacing:
+                    c.showPage()
+                    y_position = height - margin_top
+            
+            if dots_tuple == tuple():
+                # Espacio en blanco - avanzar sin dibujar
+                current_x += char_spacing
+                char_count += 1
+            else:
+                # Dibujar carácter Braille espejado
+                self._draw_braille_character(c, current_x, y_position, dots_tuple, 
+                                            dot_size=dot_size, spacing=dot_spacing)
+                current_x += char_spacing
+                char_count += 1
+        
+        # Pie de página
+        c.setFont("Helvetica-Oblique", 7)
+        c.setFillColor(colors.grey)
+        c.drawRightString(width - margin_right, margin_bottom - 5, 
+                         f"Sistema Braille (Espejo) - {datetime.now().strftime('%d/%m/%Y')}")
+        
+        # Nota al pie
+        c.setFont("Helvetica", 8)
+        c.drawCentredString(width / 2, margin_bottom + 0.5*cm,
+                           "Nota: Al voltear la hoja, el texto quedará en orientación correcta.")
+        
+        c.save()
+        return filepath
+
 
 # Instancia global
 pdf_generator = BrailleSignagePDFGenerator()
