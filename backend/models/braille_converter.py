@@ -395,7 +395,58 @@ class BrailleConverter:
             i += 1
         
         return result
-    
+
+    def mirror_braille_dots(self, dots: tuple) -> tuple:
+        """
+        Espeja una celda Braille horizontalmente para escritura manual.
+        
+        La escritura manual Braille se hace de derecha a izquierda con punzón,
+        por lo que cada celda debe espejarse (intercambiar columnas).
+        
+        Sistema de puntos:
+            Normal:  1 • • 4      Espejo:  4 • • 1
+                     2 • • 5              5 • • 2
+                     3 • • 6              6 • • 3
+        
+        Mapeo: 1↔4, 2↔5, 3↔6
+        
+        Args:
+            dots: Tupla de puntos activos (1-6)
+            
+        Returns:
+            Tupla de puntos espejados
+        """
+        if not dots:
+            return tuple()
+        
+        # Mapeo de espejo horizontal
+        mirror_map = {1: 4, 4: 1, 2: 5, 5: 2, 3: 6, 6: 3}
+        
+        mirrored = tuple(sorted(mirror_map.get(d, d) for d in dots))
+        return mirrored
+
+    def text_to_braille_dots_mirror(self, text: str) -> list:
+        """
+        Convierte texto a puntos Braille en espejo para escritura manual.
+        
+        El texto se invierte (derecha a izquierda) y cada celda se espeja.
+        Esto permite que al escribir con punzón desde el reverso,
+        el texto quede correctamente orientado al voltear la hoja.
+        
+        Args:
+            text: Texto en español a convertir
+            
+        Returns:
+            Lista de tuplas de puntos espejados, en orden invertido
+        """
+        # Obtener puntos normales
+        normal_dots = self.text_to_braille_dots(text)
+        
+        # Invertir el orden y espejar cada celda
+        mirrored_dots = [self.mirror_braille_dots(dots) for dots in reversed(normal_dots)]
+        
+        return mirrored_dots
+
     def braille_to_text(self, braille: str) -> dict:
         """
         Convierte Braille Unicode a texto español.
