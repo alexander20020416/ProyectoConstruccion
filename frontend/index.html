@@ -174,12 +174,33 @@
                         ></textarea>
                     </div>
 
+                    <!-- Selector de modo PDF -->
+                    <div class="pdf-mode-selector">
+                        <label>📄 Tipo de PDF:</label>
+                        <div class="radio-group">
+                            <label class="radio-option">
+                                <input type="radio" name="pdf-mode" value="normal" checked>
+                                <span class="radio-label">
+                                    <strong>Normal</strong>
+                                    <small>Para lectura e impresión directa</small>
+                                </span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="pdf-mode" value="mirror">
+                                <span class="radio-label">
+                                    <strong>🪞 Espejo</strong>
+                                    <small>Para escritura manual con punzón y regleta</small>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
                     <div class="actions">
                         <button id="btn-preview-pdf" class="btn btn-secondary">
                             👁️ Vista Previa
                         </button>
                         <button id="btn-generate-pdf" class="btn btn-primary">
-                            📄 Generar PDF
+                            📄 Descargar PDF
                         </button>
                         <button id="btn-clear-signage" class="btn btn-secondary">
                             Limpiar
