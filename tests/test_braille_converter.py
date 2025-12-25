@@ -154,21 +154,21 @@ class TestBrailleBidirectional:
         
         for text in original_texts:
             braille = converter.text_to_braille(text)
-            back_to_text = converter.braille_to_text(braille)
-            assert back_to_text == text, f"Falló round-trip para '{text}'"
+            result = converter.braille_to_text(braille)
+            assert result['text'] == text, f"Falló round-trip para '{text}'"
     
     def test_braille_to_text_simple(self, converter):
         """Test conversión braille → texto simple."""
         braille = '⠓⠕⠇⠁'  # 'hola'
         result = converter.braille_to_text(braille)
-        assert result == 'hola'
+        assert result['text'] == 'hola'
     
     def test_roundtrip_with_spaces(self, converter):
         """Test round-trip con espacios."""
         original = 'hola mundo'
         braille = converter.text_to_braille(original)
-        back = converter.braille_to_text(braille)
-        assert back == original
+        result = converter.braille_to_text(braille)
+        assert result['text'] == original
 
 
 class TestBrailleValidation:
@@ -246,8 +246,9 @@ class TestBrailleEdgeCases:
         """Test texto con mayúsculas y minúsculas."""
         result1 = converter.text_to_braille('Hola')
         result2 = converter.text_to_braille('hola')
-        # Braille no distingue mayúsculas
-        assert result1 == result2
+        # Braille SÍ distingue mayúsculas con indicador
+        assert result1 != result2  # 'Hola' tiene indicador mayúscula
+        assert result1.startswith('⠨')  # Empieza con indicador mayúscula
     
     def test_long_text(self, converter):
         """Test texto largo."""
@@ -259,7 +260,7 @@ class TestBrailleEdgeCases:
         """Test entrada directa de Unicode Braille."""
         braille = '⠓⠕⠇⠁'
         result = converter.braille_to_text(braille)
-        assert result == 'hola'
+        assert result['text'] == 'hola'
 
 
 class TestBrailleComplexScenarios:
@@ -273,17 +274,17 @@ class TestBrailleComplexScenarios:
         # Verificar que tiene contenido
         assert len(braille) > 0
         
-        # Verificar round-trip
-        back = converter.braille_to_text(braille)
-        assert back == text.lower()
+        # Verificar round-trip (mantiene mayúscula)
+        result = converter.braille_to_text(braille)
+        assert result['text'] == text
     
     def test_mixed_content(self, converter):
         """Test contenido mixto (letras, números, espacios)."""
         text = 'hola mundo 123'
         braille = converter.text_to_braille(text)
-        back = converter.braille_to_text(braille)
+        result = converter.braille_to_text(braille)
         
-        assert back == text
+        assert result['text'] == text
     
     def test_accented_sentence(self, converter):
         """Test oración con acentos."""
@@ -320,6 +321,387 @@ class TestBrailleIntegration:
             text = str(i)
             braille = converter.text_to_braille(text)
             assert braille.startswith('⠼'), f"Número {i} no tiene signo de número"
+
+
+# === TESTS DE BRAILLE A ESPAÑOL ===
+
+class TestBrailleToSpanish:
+    """Tests para la conversión de Braille a Español."""
+    
+    def test_simple_word(self, converter):
+        """Test palabra simple: hola."""
+        braille = '⠓⠕⠇⠁'  # h-o-l-a
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == 'hola'
+        assert result['errors'] == []
+    
+    def test_word_with_capital(self, converter):
+        """Test palabra con mayúscula: Hola."""
+        braille = '⠨⠓⠕⠇⠁'  # mayúscula + h-o-l-a
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == 'Hola'
+    
+    def test_numbers(self, converter):
+        """Test números: 123."""
+        braille = '⠼⠁⠃⠉'  # número + 1-2-3
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == '123'
+    
+    def test_punctuation(self, converter):
+        """Test signos de puntuación."""
+        # Coma (punto 2)
+        braille = '⠂'
+        result = converter.braille_to_text(braille)
+        assert result['valid'] == True
+        assert result['text'] == ','
+        
+        # Punto y coma (puntos 2,3)
+        braille = '⠆'
+        result = converter.braille_to_text(braille)
+        assert result['valid'] == True
+        assert result['text'] == ';'
+    
+    def test_sentence_with_space(self, converter):
+        """Test oración con espacio."""
+        # "hola mundo" en braille
+        braille = '⠓⠕⠇⠁⠀⠍⠥⠝⠙⠕'
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == 'hola mundo'
+    
+    def test_accented_vowels(self, converter):
+        """Test vocales acentuadas."""
+        test_cases = [
+            ('⠷', 'á'),  # á
+            ('⠮', 'é'),  # é  
+            ('⠌', 'í'),  # í
+            ('⠬', 'ó'),  # ó
+            ('⠾', 'ú'),  # ú
+        ]
+        
+        for braille, expected in test_cases:
+            result = converter.braille_to_text(braille)
+            assert result['valid'] == True
+            assert result['text'] == expected, f"Falló: {braille} debería ser {expected}"
+    
+    def test_special_spanish_chars(self, converter):
+        """Test caracteres especiales del español: ñ, ü."""
+        # ñ
+        braille = '⠻'
+        result = converter.braille_to_text(braille)
+        assert result['text'] == 'ñ'
+        
+        # ü
+        braille = '⠳'
+        result = converter.braille_to_text(braille)
+        assert result['text'] == 'ü'
+
+
+class TestBrailleToSpanishValidation:
+    """Tests para validación de errores en Braille a Español."""
+    
+    def test_capital_indicator_alone(self, converter):
+        """Test indicador de mayúscula solo (sin letra después)."""
+        braille = '⠨'  # Solo indicador mayúscula (puntos 4,6)
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == False
+        assert len(result['errors']) > 0
+        assert 'mayúscula' in result['errors'][0].lower()
+    
+    def test_number_indicator_alone(self, converter):
+        """Test indicador de número solo (sin número después)."""
+        braille = '⠼'  # Solo indicador número (puntos 3,4,5,6)
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == False
+        assert len(result['errors']) > 0
+        assert 'número' in result['errors'][0].lower()
+    
+    def test_capital_indicator_followed_by_space(self, converter):
+        """Test indicador de mayúscula seguido de espacio."""
+        braille = '⠨⠀'  # mayúscula + espacio
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == False
+        assert len(result['errors']) > 0
+    
+    def test_number_indicator_followed_by_space(self, converter):
+        """Test indicador de número seguido de espacio."""
+        braille = '⠼⠀'  # número + espacio
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == False
+        assert len(result['errors']) > 0
+    
+    def test_unrecognized_pattern(self, converter):
+        """Test patrón no reconocido (punto 4 solo)."""
+        braille = '⠈'  # Solo punto 4 - no existe en español
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == False
+        assert len(result['errors']) > 0
+        assert 'no reconocido' in result['errors'][0].lower()
+    
+    def test_multiple_errors(self, converter):
+        """Test secuencia con múltiples errores."""
+        braille = '⠨⠈⠼'  # mayúscula + punto4 + número
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == False
+        assert len(result['errors']) >= 2  # Al menos 2 errores
+    
+    def test_partial_valid_sequence(self, converter):
+        """Test secuencia parcialmente válida."""
+        braille = '⠓⠕⠇⠁⠈'  # hola + patrón inválido
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == False
+        assert result['text'] == 'hola'  # Parte válida
+        assert len(result['errors']) > 0
+    
+    def test_empty_input(self, converter):
+        """Test entrada vacía."""
+        result = converter.braille_to_text('')
+        
+        assert result['valid'] == True
+        assert result['text'] == ''
+        assert result['errors'] == []
+    
+    def test_only_spaces(self, converter):
+        """Test solo espacios."""
+        braille = '⠀⠀⠀'  # Tres espacios braille
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == '   '
+
+
+class TestBrailleRoundTrip:
+    """Tests de ida y vuelta (español -> braille -> español)."""
+    
+    def test_roundtrip_lowercase(self, converter):
+        """Test ida y vuelta con minúsculas."""
+        original = 'hola mundo'
+        braille = converter.text_to_braille(original)
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == original
+    
+    def test_roundtrip_with_capital(self, converter):
+        """Test ida y vuelta con mayúscula."""
+        original = 'Hola'
+        braille = converter.text_to_braille(original)
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == original
+    
+    def test_roundtrip_numbers(self, converter):
+        """Test ida y vuelta con números."""
+        original = '12345'
+        braille = converter.text_to_braille(original)
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == original
+    
+    def test_roundtrip_mixed(self, converter):
+        """Test ida y vuelta con contenido mixto."""
+        original = 'sala 101'
+        braille = converter.text_to_braille(original)
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == original
+    
+    def test_roundtrip_accents(self, converter):
+        """Test ida y vuelta con acentos."""
+        original = 'está aquí'
+        braille = converter.text_to_braille(original)
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == original
+    
+    def test_roundtrip_special_spanish(self, converter):
+        """Test ida y vuelta con ñ."""
+        original = 'españa'
+        braille = converter.text_to_braille(original)
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == original
+
+
+# === TESTS DE EDICIÓN DE SECUENCIA (Simulación Backend) ===
+
+class TestSequenceEditing:
+    """
+    Tests para validar operaciones de edición de secuencia Braille.
+    Estos tests simulan las operaciones que el frontend realiza.
+    """
+    
+    def test_delete_cell_from_sequence(self, converter):
+        """Test eliminar una celda de una secuencia."""
+        # Simular secuencia: h-o-l-a
+        sequence = ['⠓', '⠕', '⠇', '⠁']
+        
+        # Eliminar 'l' (índice 2)
+        del sequence[2]
+        
+        # Convertir secuencia resultante
+        braille = ''.join(sequence)
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == 'hoa'  # h-o-a sin la 'l'
+    
+    def test_insert_cell_in_sequence(self, converter):
+        """Test insertar una celda en medio de una secuencia."""
+        # Simular secuencia: h-o-a (falta 'l')
+        sequence = ['⠓', '⠕', '⠁']
+        
+        # Insertar 'l' en posición 2
+        sequence.insert(2, '⠇')
+        
+        # Convertir secuencia resultante
+        braille = ''.join(sequence)
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == 'hola'
+    
+    def test_insert_capital_indicator(self, converter):
+        """Test insertar indicador de mayúscula al inicio."""
+        # Simular secuencia: h-o-l-a (minúscula)
+        sequence = ['⠓', '⠕', '⠇', '⠁']
+        
+        # Insertar indicador de mayúscula al inicio
+        sequence.insert(0, '⠨')  # puntos 4,6
+        
+        # Convertir secuencia resultante
+        braille = ''.join(sequence)
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == 'Hola'  # Con mayúscula
+    
+    def test_insert_number_indicator(self, converter):
+        """Test insertar indicador de número antes de dígitos."""
+        # Simular secuencia: a-b-c (que son 1-2-3 sin indicador)
+        sequence = ['⠁', '⠃', '⠉']
+        
+        # Insertar indicador de número al inicio
+        sequence.insert(0, '⠼')  # puntos 3,4,5,6
+        
+        # Convertir secuencia resultante
+        braille = ''.join(sequence)
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == '123'  # Ahora son números
+    
+    def test_delete_first_cell(self, converter):
+        """Test eliminar la primera celda."""
+        # Simular secuencia con mayúscula: ⠨-h-o-l-a
+        sequence = ['⠨', '⠓', '⠕', '⠇', '⠁']
+        
+        # Eliminar indicador de mayúscula (índice 0)
+        del sequence[0]
+        
+        # Convertir secuencia resultante
+        braille = ''.join(sequence)
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == 'hola'  # Sin mayúscula
+    
+    def test_delete_last_cell(self, converter):
+        """Test eliminar la última celda."""
+        # Simular secuencia: h-o-l-a-s
+        sequence = ['⠓', '⠕', '⠇', '⠁', '⠎']
+        
+        # Eliminar última celda
+        del sequence[-1]
+        
+        # Convertir secuencia resultante
+        braille = ''.join(sequence)
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == 'hola'
+    
+    def test_multiple_edits(self, converter):
+        """Test múltiples ediciones en secuencia."""
+        # Empezar con: h-l-a (falta 'o')
+        sequence = ['⠓', '⠇', '⠁']
+        
+        # Insertar 'o' en posición 1
+        sequence.insert(1, '⠕')
+        
+        # Agregar 's' al final
+        sequence.append('⠎')
+        
+        # Convertir
+        braille = ''.join(sequence)
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == 'holas'
+        
+        # Eliminar 's'
+        del sequence[-1]
+        
+        # Insertar indicador mayúscula al inicio
+        sequence.insert(0, '⠨')
+        
+        # Convertir de nuevo
+        braille = ''.join(sequence)
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == 'Hola'
+    
+    def test_clear_sequence(self, converter):
+        """Test limpiar toda la secuencia."""
+        sequence = ['⠓', '⠕', '⠇', '⠁']
+        
+        # Limpiar
+        sequence.clear()
+        
+        # Verificar vacía
+        assert len(sequence) == 0
+        
+        # Convertir vacío
+        braille = ''.join(sequence)
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == ''
+    
+    def test_replace_cell(self, converter):
+        """Test reemplazar una celda (eliminar + insertar)."""
+        # Simular secuencia: h-o-l-a
+        sequence = ['⠓', '⠕', '⠇', '⠁']
+        
+        # Reemplazar 'o' por 'a' en posición 1
+        sequence[1] = '⠁'
+        
+        # Convertir
+        braille = ''.join(sequence)
+        result = converter.braille_to_text(braille)
+        
+        assert result['valid'] == True
+        assert result['text'] == 'hala'
 
 
 # === EJECUCIÓN DIRECTA ===
