@@ -704,6 +704,102 @@ class TestSequenceEditing:
         assert result['text'] == 'hala'
 
 
+class TestBrailleMirror:
+    """Tests para la funcionalidad de espejo (escritura manual)."""
+    
+    def test_mirror_single_dot(self, converter):
+        """Test espejo de puntos individuales."""
+        # Punto 1 debe convertirse en punto 4
+        assert converter.mirror_braille_dots((1,)) == (4,)
+        # Punto 4 debe convertirse en punto 1
+        assert converter.mirror_braille_dots((4,)) == (1,)
+        # Punto 2 debe convertirse en punto 5
+        assert converter.mirror_braille_dots((2,)) == (5,)
+        # Punto 5 debe convertirse en punto 2
+        assert converter.mirror_braille_dots((5,)) == (2,)
+        # Punto 3 debe convertirse en punto 6
+        assert converter.mirror_braille_dots((3,)) == (6,)
+        # Punto 6 debe convertirse en punto 3
+        assert converter.mirror_braille_dots((6,)) == (3,)
+    
+    def test_mirror_multiple_dots(self, converter):
+        """Test espejo de múltiples puntos."""
+        # Letra 'a' = (1,) -> espejo = (4,)
+        assert converter.mirror_braille_dots((1,)) == (4,)
+        
+        # Letra 'h' = (1,2,5) -> espejo = (2,4,5)
+        result = converter.mirror_braille_dots((1, 2, 5))
+        assert result == (2, 4, 5)
+        
+        # Letra 'o' = (1,3,5) -> espejo = (2,4,6)
+        result = converter.mirror_braille_dots((1, 3, 5))
+        assert result == (2, 4, 6)
+    
+    def test_mirror_empty(self, converter):
+        """Test espejo de tupla vacía (espacio)."""
+        assert converter.mirror_braille_dots(tuple()) == tuple()
+        assert converter.mirror_braille_dots(()) == ()
+    
+    def test_mirror_capital_sign(self, converter):
+        """Test espejo del indicador de mayúscula."""
+        # Indicador mayúscula = (4,6) -> espejo = (1,3)
+        result = converter.mirror_braille_dots((4, 6))
+        assert result == (1, 3)
+    
+    def test_mirror_number_sign(self, converter):
+        """Test espejo del indicador de número."""
+        # Indicador número = (3,4,5,6) -> espejo:
+        # 3->6, 4->1, 5->2, 6->3 = (1,2,3,6) ordenado
+        result = converter.mirror_braille_dots((3, 4, 5, 6))
+        assert result == (1, 2, 3, 6)
+    
+    def test_text_to_braille_dots_mirror_simple(self, converter):
+        """Test conversión a puntos espejo - texto simple."""
+        # 'ab' normal = [(1,), (1,2)]
+        # 'ab' espejo = [(2,4), (4,)] - orden invertido y celdas espejadas
+        result = converter.text_to_braille_dots_mirror('ab')
+        
+        # Debe estar invertido: primero 'b' espejado, luego 'a' espejado
+        # 'b' = (1,2) -> espejo = (4,5)
+        # 'a' = (1,) -> espejo = (4,)
+        assert result == [(4, 5), (4,)]
+    
+    def test_text_to_braille_dots_mirror_with_space(self, converter):
+        """Test espejo con espacios."""
+        # 'a b' -> normal: [(1,), (), (1,2)]
+        # espejo e invertido: [(4,5), (), (4,)]
+        result = converter.text_to_braille_dots_mirror('a b')
+        
+        assert len(result) == 3
+        assert result[0] == (4, 5)  # 'b' espejado
+        assert result[1] == ()       # espacio
+        assert result[2] == (4,)     # 'a' espejado
+    
+    def test_mirror_preserves_length(self, converter):
+        """Test que el espejo preserva la longitud de la secuencia."""
+        text = "hola mundo"
+        normal = converter.text_to_braille_dots(text)
+        mirror = converter.text_to_braille_dots_mirror(text)
+        
+        assert len(normal) == len(mirror)
+    
+    def test_double_mirror_returns_original(self, converter):
+        """Test que aplicar espejo dos veces devuelve el original."""
+        # Espejar una celda dos veces debe dar el original
+        original = (1, 2, 5)
+        once = converter.mirror_braille_dots(original)
+        twice = converter.mirror_braille_dots(once)
+        
+        assert twice == original
+    
+    def test_mirror_full_cell(self, converter):
+        """Test espejo de celda completa (todos los puntos)."""
+        # (1,2,3,4,5,6) -> espejo = (1,2,3,4,5,6) - simétrico
+        full_cell = (1, 2, 3, 4, 5, 6)
+        result = converter.mirror_braille_dots(full_cell)
+        assert result == full_cell
+
+
 # === EJECUCIÓN DIRECTA ===
 
 if __name__ == '__main__':
