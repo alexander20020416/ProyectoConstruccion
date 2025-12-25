@@ -111,10 +111,10 @@ class BrailleConverter:
             ',': (2,),                 # coma
             ';': (2, 3),               # punto y coma
             ':': (2, 5),               # dos puntos
-            '?': (2, 6),               # interrogación
+            '?': (2, 6),               # interrogación (cierre)
             '¿': (2, 6),               # interrogación apertura (igual que cierre)
-            '!': (2, 3, 5),            # exclamación
-            '¡': (2, 3, 5),            # exclamación apertura
+            '!': (2, 3, 5),            # exclamación (cierre)
+            '¡': (2, 3, 5),            # exclamación apertura (igual que cierre)
             '-': (3, 6),               # guion / resta
             '−': (3, 6),               # signo menos (matemático)
             '–': (3, 6),               # guion medio (en dash)
@@ -131,6 +131,17 @@ class BrailleConverter:
             '×': (2, 3, 6),               # multiplicación
             '*': (2, 3, 6),               # asterisco / multiplicación
             ' ': tuple(),              # espacio en blanco
+        }
+        
+        # Mapeo inverso preferido (para Braille -> Texto)
+        # Cuando hay duplicados, se prefiere el carácter de cierre
+        self.PUNCTUATION_INVERSE_PRIORITY = {
+            (2, 6): '?',    # Preferir ? sobre ¿
+            (2, 3, 5): '!', # Preferir ! sobre ¡
+            (3,): '.',      # Preferir . sobre '
+            (3, 6): '-',    # Preferir - sobre otros guiones
+            (2, 5, 6): '/', # Preferir / sobre ÷
+            (2, 3, 6): '"', # Preferir " sobre * y ×
         }
         
         # Combinar todos los caracteres especiales
@@ -385,7 +396,7 @@ class BrailleConverter:
         
         return result
     
-    def braille_to_text(self, braille: str) -> str:
+    def braille_to_text(self, braille: str) -> dict:
         """
         Convierte Braille Unicode a texto español.
         
@@ -393,31 +404,41 @@ class BrailleConverter:
             braille: Texto en Braille Unicode
             
         Returns:
-            Texto en español
+            Diccionario con:
+                - text: Texto en español
+                - valid: Si la traducción es válida
+                - errors: Lista de errores encontrados
             
         Ejemplo:
             >>> braille_to_text("⠓⠕⠇⠁")
-            'hola'
+            {'text': 'hola', 'valid': True, 'errors': []}
         """
         if not braille:
-            return ""
+            return {'text': '', 'valid': True, 'errors': []}
         
         # Crear mapeo inverso completo (letras, vocales acentuadas, ñ, ü)
         inverse_map = {}
         for char, dots in {**self.ALPHABET, **self.SPECIAL_CHARS}.items():
             inverse_map[dots] = char
         
-        # Agregar puntuación
+        # Agregar puntuación con prioridad para caracteres preferidos
         for char, dots in self.PUNCTUATION.items():
-            if dots not in inverse_map:  # No sobrescribir si ya existe
+            if dots not in inverse_map:
                 inverse_map[dots] = char
+        
+        # Aplicar prioridades para signos con duplicados
+        for dots, preferred_char in self.PUNCTUATION_INVERSE_PRIORITY.items():
+            inverse_map[dots] = preferred_char
         
         # Mapeo inverso de números
         inverse_numbers = {dots: num for num, dots in self.NUMBERS.items()}
         
         result = []
+        errors = []
         in_number_mode = False
         next_is_capital = False
+        pending_capital = False  # Para detectar indicador sin letra después
+        pending_number = False   # Para detectar indicador sin número después
         
         i = 0
         while i < len(braille):
@@ -426,22 +447,38 @@ class BrailleConverter:
             
             # Detectar indicador de mayúscula
             if dots == self.CAPITAL_SIGN:
+                if pending_capital:
+                    errors.append(f"Indicador de mayúscula (puntos 4,6) sin letra después en posición {i}")
                 next_is_capital = True
+                pending_capital = True
                 i += 1
                 continue
             
             # Detectar signo de número
             if dots == self.NUMBER_SIGN:
+                if pending_number:
+                    errors.append(f"Indicador de número (puntos 3,4,5,6) sin número después en posición {i}")
                 in_number_mode = True
+                pending_number = True
                 i += 1
                 continue
             
             # Espacio termina modo número
             if not dots:
+                if pending_capital:
+                    errors.append("Indicador de mayúscula (puntos 4,6) seguido de espacio")
+                    pending_capital = False
+                if pending_number:
+                    errors.append("Indicador de número (puntos 3,4,5,6) seguido de espacio")
+                    pending_number = False
                 in_number_mode = False
                 result.append(' ')
                 i += 1
                 continue
+            
+            # Limpiar flags de pendientes
+            pending_capital = False
+            pending_number = False
             
             # Convertir según modo
             if in_number_mode:
@@ -456,38 +493,66 @@ class BrailleConverter:
                         next_dots = self.unicode_to_dots(braille[i + 1])
                         if next_dots in inverse_numbers:
                             # Mantener modo número y agregar el separador
-                            char = inverse_map.get(dots, '?')
-                            result.append(char)
+                            char = inverse_map.get(dots, None)
+                            if char:
+                                result.append(char)
+                            else:
+                                errors.append(f"Carácter no reconocido (puntos {dots}) en posición {i}")
                         else:
                             # Terminar modo número
                             in_number_mode = False
-                            char = inverse_map.get(dots, '?')
-                            result.append(char)
+                            char = inverse_map.get(dots, None)
+                            if char:
+                                result.append(char)
+                            else:
+                                errors.append(f"Carácter no reconocido (puntos {dots}) en posición {i}")
                     else:
                         # Fin de cadena, terminar modo número
                         in_number_mode = False
-                        char = inverse_map.get(dots, '?')
-                        result.append(char)
+                        char = inverse_map.get(dots, None)
+                        if char:
+                            result.append(char)
+                        else:
+                            errors.append(f"Carácter no reconocido (puntos {dots}) en posición {i}")
                 else:
                     # Cualquier otro carácter termina el modo número
                     in_number_mode = False
-                    char = inverse_map.get(dots, '?')
-                    if next_is_capital and char != '?':
+                    char = inverse_map.get(dots, None)
+                    if char is None:
+                        errors.append(f"Carácter no reconocido (puntos {dots}) en posición {i}")
+                    else:
+                        if next_is_capital:
+                            char = char.upper()
+                            next_is_capital = False
+                        result.append(char)
+            else:
+                # Modo normal: convertir letras y símbolos
+                char = inverse_map.get(dots, None)
+                if char is None:
+                    errors.append(f"Carácter no reconocido (puntos {dots}) en posición {i}")
+                else:
+                    # Aplicar mayúscula si corresponde
+                    if next_is_capital:
                         char = char.upper()
                         next_is_capital = False
                     result.append(char)
-            else:
-                # Modo normal: convertir letras y símbolos
-                char = inverse_map.get(dots, '?')
-                # Aplicar mayúscula si corresponde
-                if next_is_capital and char != '?':
-                    char = char.upper()
-                    next_is_capital = False
-                result.append(char)
             
             i += 1
         
-        return ''.join(result)
+        # Verificar indicadores pendientes al final
+        if pending_capital:
+            errors.append("Indicador de mayúscula (puntos 4,6) al final sin letra")
+        if pending_number:
+            errors.append("Indicador de número (puntos 3,4,5,6) al final sin número")
+        
+        text_result = ''.join(result)
+        is_valid = len(errors) == 0 and len(text_result) > 0
+        
+        return {
+            'text': text_result,
+            'valid': is_valid,
+            'errors': errors
+        }
     
     def get_braille_info(self, char: str) -> Optional[Dict]:
         """

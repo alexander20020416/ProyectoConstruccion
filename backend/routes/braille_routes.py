@@ -202,6 +202,8 @@ def convert_to_text():
             "success": true,
             "braille_input": "⠓⠕⠇⠁",
             "text": "hola",
+            "valid": true,
+            "errors": [],
             "character_count": 4,
             "timestamp": "2025-11-22T..."
         }
@@ -217,12 +219,29 @@ def convert_to_text():
         
         braille_input = data['braille']
         
-        # Convertir a texto
-        text_output = braille_converter.braille_to_text(braille_input)
+        # Convertir a texto (ahora devuelve dict con text, valid, errors)
+        result = braille_converter.braille_to_text(braille_input)
         
-        # Guardar en base de datos
+        # Si no es válido, devolver error con detalles
+        if not result['valid']:
+            error_msg = "Traducción inválida"
+            if result['errors']:
+                error_msg += ": " + "; ".join(result['errors'])
+            
+            return jsonify({
+                'success': True,  # La operación se completó, pero hay advertencias
+                'braille_input': braille_input,
+                'text': result['text'] if result['text'] else None,
+                'valid': False,
+                'errors': result['errors'],
+                'error_message': error_msg,
+                'character_count': len(result['text']) if result['text'] else 0,
+                'timestamp': datetime.now().isoformat()
+            }), 200
+        
+        # Guardar en base de datos solo si es válido
         db_manager.save_conversion(
-            original_text=text_output,
+            original_text=result['text'],
             braille_text=braille_input,
             conversion_type='braille_to_text'
         )
@@ -230,8 +249,10 @@ def convert_to_text():
         return jsonify({
             'success': True,
             'braille_input': braille_input,
-            'text': text_output,
-            'character_count': len(text_output),
+            'text': result['text'],
+            'valid': True,
+            'errors': [],
+            'character_count': len(result['text']),
             'timestamp': datetime.now().isoformat()
         }), 200
         
