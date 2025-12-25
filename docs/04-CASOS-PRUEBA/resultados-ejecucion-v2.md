@@ -1,431 +1,431 @@
-# Reporte de Casos de Prueba - Segunda Iteraci√≥n (v2)
-
-Este documento detalla los casos de prueba implementados para validar las nuevas funcionalidades de la segunda iteraci√≥n.
-
-## Resumen de Tests
-
-| Categor√≠a | Cantidad | Estado |
-|-----------|----------|--------|
-| Conversi√≥n Braille a Espa√±ol | 15 | ‚úÖ Pasados |
-| Validaci√≥n de Traducciones | 8 | ‚úÖ Pasados |
-| Edici√≥n de Secuencia | 9 | ‚úÖ Pasados |
-| Funcionalidad de Espejo | 10 | ‚úÖ Pasados |
-| **Total Nuevos** | **42** | ‚úÖ **Todos pasados** |
-| **Total General** | **71** | ‚úÖ **Todos pasados** |
-
----
-
-## 1. Tests de Conversi√≥n Braille a Espa√±ol
-
-### Clase: `TestBrailleToSpanish`
-
-#### Test 1.1: Letras Simples
-
-```python
-def test_single_letters(self, converter):
-    """Test conversi√≥n de letras individuales."""
-    braille_a = '‚†Å'  # puntos (1,)
-    result = converter.braille_to_text(braille_a)
-    assert result['text'] == 'a'
-    assert result['valid'] == True
-```
-
-| Entrada | Esperado | Obtenido | Estado |
-|---------|----------|----------|--------|
-| ‚†Å | a | a | ‚úÖ |
-| ‚†É | b | b | ‚úÖ |
-| ‚†â | c | c | ‚úÖ |
-
-#### Test 1.2: Palabras Completas
-
-```python
-def test_word_hola(self, converter):
-    """Test palabra 'hola'."""
-    braille = '‚†ì‚†ï‚†á‚†Å'
-    result = converter.braille_to_text(braille)
-    assert result['text'] == 'hola'
-```
-
-| Entrada | Esperado | Obtenido | Estado |
-|---------|----------|----------|--------|
-| ‚†ì‚†ï‚†á‚†Å | hola | hola | ‚úÖ |
-| ‚†ç‚†•‚†ù‚†ô‚†ï | mundo | mundo | ‚úÖ |
-
-#### Test 1.3: May√∫sculas
-
-```python
-def test_capital_letter(self, converter):
-    """Test letra may√∫scula con indicador."""
-    braille = '‚†®‚†ì‚†ï‚†á‚†Å'  # indicador + h + o + l + a
-    result = converter.braille_to_text(braille)
-    assert result['text'] == 'Hola'
-```
-
-| Entrada | Esperado | Obtenido | Estado |
-|---------|----------|----------|--------|
-| ‚†®‚†ì | H | H | ‚úÖ |
-| ‚†®‚†Å‚†®‚†É | AB | AB | ‚úÖ |
-
-#### Test 1.4: N√∫meros
-
-```python
-def test_numbers(self, converter):
-    """Test n√∫meros con indicador num√©rico."""
-    braille = '‚†º‚†Å‚†É‚†â'  # #123
-    result = converter.braille_to_text(braille)
-    assert result['text'] == '123'
-```
-
-| Entrada | Esperado | Obtenido | Estado |
-|---------|----------|----------|--------|
-| ‚†º‚†Å | 1 | 1 | ‚úÖ |
-| ‚†º‚†Å‚†É‚†â | 123 | 123 | ‚úÖ |
-| ‚†º‚†ö | 0 | 0 | ‚úÖ |
-
-#### Test 1.5: Vocales Acentuadas
-
-```python
-def test_accented_vowels(self, converter):
-    """Test vocales con acento."""
-    result = converter.braille_to_text('‚†∑')  # √°
-    assert result['text'] == '√°'
-```
-
-| Entrada | Esperado | Obtenido | Estado |
-|---------|----------|----------|--------|
-| ‚†∑ | √° | √° | ‚úÖ |
-| ‚†Æ | √© | √© | ‚úÖ |
-| ‚†å | √≠ | √≠ | ‚úÖ |
-| ‚†¨ | √≥ | √≥ | ‚úÖ |
-| ‚†æ | √∫ | √∫ | ‚úÖ |
-
-#### Test 1.6: Puntuaci√≥n
-
-```python
-def test_punctuation(self, converter):
-    """Test signos de puntuaci√≥n."""
-    result = converter.braille_to_text('‚†¢')  # punto
-    assert result['text'] == '.'
-```
-
-| Entrada | Esperado | Obtenido | Estado |
-|---------|----------|----------|--------|
-| ‚†¢ | . | . | ‚úÖ |
-| ‚†Ç | , | , | ‚úÖ |
-| ‚†¶ | ? | ? | ‚úÖ |
-| ‚†ñ | ! | ! | ‚úÖ |
-
----
-
-## 2. Tests de Validaci√≥n de Traducciones
-
-### Clase: `TestBrailleToSpanishValidation`
-
-#### Test 2.1: Indicador de May√∫scula Solo
-
-```python
-def test_capital_indicator_alone(self, converter):
-    """Indicador de may√∫scula sin letra siguiente."""
-    result = converter.braille_to_text('‚†®')
-    assert result['valid'] == False
-    assert 'may√∫scula' in result['errors'][0].lower()
-```
-
-| Entrada | Valid | Error Esperado | Estado |
-|---------|-------|----------------|--------|
-| ‚†® | False | Indicador de may√∫scula sin letra siguiente | ‚úÖ |
-
-#### Test 2.2: Indicador de N√∫mero Solo
-
-```python
-def test_number_indicator_alone(self, converter):
-    """Indicador de n√∫mero sin d√≠gito siguiente."""
-    result = converter.braille_to_text('‚†º')
-    assert result['valid'] == False
-    assert 'n√∫mero' in result['errors'][0].lower()
-```
-
-| Entrada | Valid | Error Esperado | Estado |
-|---------|-------|----------------|--------|
-| ‚†º | False | Indicador de n√∫mero sin d√≠gito siguiente | ‚úÖ |
-
-#### Test 2.3: Patr√≥n No Reconocido
-
-```python
-def test_unrecognized_pattern(self, converter):
-    """Patr√≥n Braille no reconocido."""
-    result = converter.braille_to_text('‚†ø')  # todos los puntos
-    assert result['valid'] == False
-```
-
-| Entrada | Valid | Estado |
-|---------|-------|--------|
-| ‚†ø | False | ‚úÖ |
-
-#### Test 2.4: Secuencia Parcialmente V√°lida
-
-```python
-def test_partial_valid_sequence(self, converter):
-    """Secuencia con parte v√°lida y parte inv√°lida."""
-    result = converter.braille_to_text('‚†ì‚†ï‚†á‚†Å‚†®')  # hola + indicador solo
-    assert result['valid'] == False
-    assert 'hola' in result['text'].lower()
-```
-
-| Entrada | Text | Valid | Estado |
-|---------|------|-------|--------|
-| ‚†ì‚†ï‚†á‚†Å‚†® | hola (parcial) | False | ‚úÖ |
-
----
-
-## 3. Tests de Edici√≥n de Secuencia
-
-### Clase: `TestSequenceEditing`
-
-#### Test 3.1: Eliminar Celda
-
-```python
-def test_delete_cell_from_sequence(self, converter):
-    """Eliminar una celda de la secuencia."""
-    sequence = ['‚†ì', '‚†ï', '‚†á', '‚†Å']  # h-o-l-a
-    del sequence[1]  # Eliminar 'o'
-    
-    braille = ''.join(sequence)
-    result = converter.braille_to_text(braille)
-    assert result['text'] == 'hla'
-```
-
-| Secuencia Original | Acci√≥n | Resultado | Estado |
-|-------------------|--------|-----------|--------|
-| h-o-l-a | Eliminar 'o' | hla | ‚úÖ |
-
-#### Test 3.2: Insertar Celda
-
-```python
-def test_insert_cell_in_sequence(self, converter):
-    """Insertar celda en medio de la secuencia."""
-    sequence = ['‚†ì', '‚†á', '‚†Å']  # h-l-a
-    sequence.insert(1, '‚†ï')  # Insertar 'o'
-    
-    braille = ''.join(sequence)
-    result = converter.braille_to_text(braille)
-    assert result['text'] == 'hola'
-```
-
-| Secuencia Original | Acci√≥n | Resultado | Estado |
-|-------------------|--------|-----------|--------|
-| h-l-a | Insertar 'o' pos 1 | hola | ‚úÖ |
-
-#### Test 3.3: Insertar Indicador de May√∫scula
-
-```python
-def test_insert_capital_indicator(self, converter):
-    """Insertar indicador de may√∫scula."""
-    sequence = ['‚†ì', '‚†ï', '‚†á', '‚†Å']
-    sequence.insert(0, '‚†®')  # Agregar may√∫scula al inicio
-    
-    braille = ''.join(sequence)
-    result = converter.braille_to_text(braille)
-    assert result['text'] == 'Hola'
-```
-
-| Secuencia Original | Acci√≥n | Resultado | Estado |
-|-------------------|--------|-----------|--------|
-| h-o-l-a | Insertar ‚†® pos 0 | Hola | ‚úÖ |
-
-#### Test 3.4: Limpiar Secuencia
-
-```python
-def test_clear_sequence(self, converter):
-    """Limpiar toda la secuencia."""
-    sequence = ['‚†ì', '‚†ï', '‚†á', '‚†Å']
-    sequence.clear()
-    
-    braille = ''.join(sequence)
-    result = converter.braille_to_text(braille)
-    assert result['text'] == ''
-```
-
-| Acci√≥n | Resultado | Estado |
-|--------|-----------|--------|
-| Clear | '' (vac√≠o) | ‚úÖ |
-
----
-
-## 4. Tests de Funcionalidad de Espejo
-
-### Clase: `TestBrailleMirror`
-
-#### Test 4.1: Espejo de Puntos Individuales
-
-```python
-def test_mirror_single_dot(self, converter):
-    """Espejo de puntos individuales."""
-    assert converter.mirror_braille_dots((1,)) == (4,)
-    assert converter.mirror_braille_dots((4,)) == (1,)
-    assert converter.mirror_braille_dots((2,)) == (5,)
-    assert converter.mirror_braille_dots((5,)) == (2,)
-    assert converter.mirror_braille_dots((3,)) == (6,)
-    assert converter.mirror_braille_dots((6,)) == (3,)
-```
-
-| Entrada | Esperado | Obtenido | Estado |
-|---------|----------|----------|--------|
-| (1,) | (4,) | (4,) | ‚úÖ |
-| (4,) | (1,) | (1,) | ‚úÖ |
-| (2,) | (5,) | (5,) | ‚úÖ |
-| (5,) | (2,) | (2,) | ‚úÖ |
-| (3,) | (6,) | (6,) | ‚úÖ |
-| (6,) | (3,) | (3,) | ‚úÖ |
-
-#### Test 4.2: Espejo de M√∫ltiples Puntos
-
-```python
-def test_mirror_multiple_dots(self, converter):
-    """Espejo de m√∫ltiples puntos."""
-    # Letra 'h' = (1,2,5) -> espejo = (2,4,5)
-    result = converter.mirror_braille_dots((1, 2, 5))
-    assert result == (2, 4, 5)
-```
-
-| Entrada | Esperado | Obtenido | Estado |
-|---------|----------|----------|--------|
-| (1,2,5) | (2,4,5) | (2,4,5) | ‚úÖ |
-| (1,3,5) | (2,4,6) | (2,4,6) | ‚úÖ |
-
-#### Test 4.3: Espejo de Tupla Vac√≠a
-
-```python
-def test_mirror_empty(self, converter):
-    """Espejo de tupla vac√≠a (espacio)."""
-    assert converter.mirror_braille_dots(tuple()) == tuple()
-```
-
-| Entrada | Esperado | Obtenido | Estado |
-|---------|----------|----------|--------|
-| () | () | () | ‚úÖ |
-
-#### Test 4.4: Espejo del Indicador de May√∫scula
-
-```python
-def test_mirror_capital_sign(self, converter):
-    """Espejo del indicador de may√∫scula."""
-    # (4,6) -> espejo = (1,3)
-    result = converter.mirror_braille_dots((4, 6))
-    assert result == (1, 3)
-```
-
-| Entrada | Esperado | Obtenido | Estado |
-|---------|----------|----------|--------|
-| (4,6) | (1,3) | (1,3) | ‚úÖ |
-
-#### Test 4.5: Espejo del Indicador de N√∫mero
-
-```python
-def test_mirror_number_sign(self, converter):
-    """Espejo del indicador de n√∫mero."""
-    # (3,4,5,6) -> 3->6, 4->1, 5->2, 6->3 = (1,2,3,6)
-    result = converter.mirror_braille_dots((3, 4, 5, 6))
-    assert result == (1, 2, 3, 6)
-```
-
-| Entrada | Esperado | Obtenido | Estado |
-|---------|----------|----------|--------|
-| (3,4,5,6) | (1,2,3,6) | (1,2,3,6) | ‚úÖ |
-
-#### Test 4.6: Texto Simple Espejado
-
-```python
-def test_text_to_braille_dots_mirror_simple(self, converter):
-    """Conversi√≥n a puntos espejo - texto simple."""
-    # 'ab' espejo = [(4,5), (4,)] - invertido y espejado
-    result = converter.text_to_braille_dots_mirror('ab')
-    assert result == [(4, 5), (4,)]
-```
-
-| Entrada | Esperado | Obtenido | Estado |
-|---------|----------|----------|--------|
-| 'ab' | [(4,5), (4,)] | [(4,5), (4,)] | ‚úÖ |
-
-#### Test 4.7: Preservaci√≥n de Longitud
-
-```python
-def test_mirror_preserves_length(self, converter):
-    """El espejo preserva la longitud de la secuencia."""
-    text = "hola mundo"
-    normal = converter.text_to_braille_dots(text)
-    mirror = converter.text_to_braille_dots_mirror(text)
-    assert len(normal) == len(mirror)
-```
-
-| Texto | Longitud Normal | Longitud Espejo | Estado |
-|-------|-----------------|-----------------|--------|
-| "hola mundo" | 10 | 10 | ‚úÖ |
-
-#### Test 4.8: Doble Espejo Retorna Original
-
-```python
-def test_double_mirror_returns_original(self, converter):
-    """Aplicar espejo dos veces devuelve el original."""
-    original = (1, 2, 5)
-    once = converter.mirror_braille_dots(original)
-    twice = converter.mirror_braille_dots(once)
-    assert twice == original
-```
-
-| Original | Una vez | Dos veces | Estado |
-|----------|---------|-----------|--------|
-| (1,2,5) | (2,4,5) | (1,2,5) | ‚úÖ |
-
-#### Test 4.9: Celda Completa (Sim√©trica)
-
-```python
-def test_mirror_full_cell(self, converter):
-    """Espejo de celda completa - es sim√©trica."""
-    full_cell = (1, 2, 3, 4, 5, 6)
-    result = converter.mirror_braille_dots(full_cell)
-    assert result == full_cell
-```
-
-| Entrada | Esperado | Obtenido | Estado |
-|---------|----------|----------|--------|
-| (1,2,3,4,5,6) | (1,2,3,4,5,6) | (1,2,3,4,5,6) | ‚úÖ |
-
----
-
-## Ejecuci√≥n de Tests
-
-### Comando
-
-```bash
-pytest tests/test_braille_converter.py -v
-```
-
-### Resultado
-
-```
-========================= test session starts ==========================
-collected 71 items
-
-tests/test_braille_converter.py::TestBrailleAlphabet::test_serie_1_letters PASSED
-tests/test_braille_converter.py::TestBrailleAlphabet::test_serie_2_letters PASSED
-tests/test_braille_converter.py::TestBrailleAlphabet::test_serie_3_letters PASSED
-...
-tests/test_braille_converter.py::TestBrailleMirror::test_mirror_single_dot PASSED
-tests/test_braille_converter.py::TestBrailleMirror::test_mirror_multiple_dots PASSED
-tests/test_braille_converter.py::TestBrailleMirror::test_double_mirror_returns_original PASSED
-tests/test_braille_converter.py::TestBrailleMirror::test_mirror_full_cell PASSED
-
-========================= 71 passed in 0.07s ===========================
-```
-
----
-
-## Conclusiones
-
-‚úÖ **Todos los tests pasan exitosamente**
-
-- 71 tests en total
-- 42 tests nuevos para la segunda iteraci√≥n
-- Cobertura completa de nuevas funcionalidades
-- Tiempo de ejecuci√≥n: ~0.07 segundos
+OK#OK OKROKeOKpOKoOKrOKtOKeOK OKdOKeOK OKCOKaOKsOKoOKsOK OKdOKeOK OKPOKrOKuOKeOKbOKaOK OK-OK OKSOKeOKgOKuOKnOKdOKaOK OKIOKtOKeOKrOKaOKcOKiOK√OK≥OKnOK OK(OKvOK2OK)OK
+OK
+OKEOKsOKtOKeOK OKdOKoOKcOKuOKmOKeOKnOKtOKoOK OKdOKeOKtOKaOKlOKlOKaOK OKlOKoOKsOK OKcOKaOKsOKoOKsOK OKdOKeOK OKpOKrOKuOKeOKbOKaOK OKiOKmOKpOKlOKeOKmOKeOKnOKtOKaOKdOKoOKsOK OKpOKaOKrOKaOK OKvOKaOKlOKiOKdOKaOKrOK OKlOKaOKsOK OKnOKuOKeOKvOKaOKsOK OKfOKuOKnOKcOKiOKoOKnOKaOKlOKiOKdOKaOKdOKeOKsOK OKdOKeOK OKlOKaOK OKsOKeOKgOKuOKnOKdOKaOK OKiOKtOKeOKrOKaOKcOKiOK√OK≥OKnOK.OK
+OK
+OK#OK#OK OKROKeOKsOKuOKmOKeOKnOK OKdOKeOK OKTOKeOKsOKtOKsOK
+OK
+OK|OK OKCOKaOKtOKeOKgOKoOKrOKiOKaOK OK|OK OKCOKaOKnOKtOKiOKdOKaOKdOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OKCOKoOKnOKvOKeOKrOKsOKiOKoOKnOK OKBOKrOKaOKiOKlOKlOKeOK OKaOK OKEOKsOKpOKaOKnOKoOKlOK OK|OK OK1OK5OK OK|OK OKPOKaOKsOKaOKdOKoOKsOK OK|OK
+OK|OK OKVOKaOKlOKiOKdOKaOKcOKiOKoOKnOK OKdOKeOK OKTOKrOKaOKdOKuOKcOKcOKiOKoOKnOKeOKsOK OK|OK OK8OK OK|OK OKPOKaOKsOKaOKdOKoOKsOK OK|OK
+OK|OK OKEOKdOKiOKcOKiOKoOKnOK OKdOKeOK OKSOKeOKcOKuOKeOKnOKcOKiOKaOK OK|OK OK9OK OK|OK OKPOKaOKsOKaOKdOKoOKsOK OK|OK
+OK|OK OKFOKuOKnOKcOKiOKoOKnOKaOKlOKiOKdOKaOKdOK OKdOKeOK OKEOKsOKpOKeOKjOKoOK OK|OK OK1OK0OK OK|OK OKPOKaOKsOKaOKdOKoOKsOK OK|OK
+OK|OK OK*OK*OKTOKoOKtOKaOKlOK OKNOKuOKeOKvOKoOKsOK*OK*OK OK|OK OK*OK*OK4OK2OK*OK*OK OK|OK OK*OK*OKTOKoOKdOKoOKsOK OKpOKaOKsOKaOKdOKoOKsOK*OK*OK OK|OK
+OK|OK OK*OK*OKTOKoOKtOKaOKlOK OKGOKeOKnOKeOKrOKaOKlOK*OK*OK OK|OK OK*OK*OK7OK1OK*OK*OK OK|OK OK*OK*OKTOKoOKdOKoOKsOK OKpOKaOKsOKaOKdOKoOKsOK*OK*OK OK|OK
+OK
+OK-OK-OK-OK
+OK
+OK#OK#OK OK1OK.OK OKTOKeOKsOKtOKsOK OKdOKeOK OKCOKoOKnOKvOKeOKrOKsOKiOK√OK≥OKnOK OKBOKrOKaOKiOKlOKlOKeOK OKaOK OKEOKsOKpOKaOK√OK±OKoOKlOK
+OK
+OK#OK#OK#OK OKCOKlOKaOKsOKeOK:OK OK`OKTOKeOKsOKtOKBOKrOKaOKiOKlOKlOKeOKTOKoOKSOKpOKaOKnOKiOKsOKhOK`OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK1OK.OK1OK:OK OKLOKeOKtOKrOKaOKsOK OKSOKiOKmOKpOKlOKeOKsOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKsOKiOKnOKgOKlOKeOK_OKlOKeOKtOKtOKeOKrOKsOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKTOKeOKsOKtOK OKcOKoOKnOKvOKeOKrOKsOKiOK√OK≥OKnOK OKdOKeOK OKlOKeOKtOKrOKaOKsOK OKiOKnOKdOKiOKvOKiOKdOKuOKaOKlOKeOKsOK.OK"OK"OK"OK
+OK OK OK OK OKbOKrOKaOKiOKlOKlOKeOK_OKaOK OK=OK OK'OK‚OK†OKÅOK'OK OK OK#OK OKpOKuOKnOKtOKoOKsOK OK(OK1OK,OK)OK
+OK OK OK OK OKrOKeOKsOKuOKlOKtOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKbOKrOKaOKiOKlOKlOKeOK_OKtOKoOK_OKtOKeOKxOKtOK(OKbOKrOKaOKiOKlOKlOKeOK_OKaOK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK[OK'OKtOKeOKxOKtOK'OK]OK OK=OK=OK OK'OKaOK'OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK[OK'OKvOKaOKlOKiOKdOK'OK]OK OK=OK=OK OKTOKrOKuOKeOK
+OK`OK`OK`OK
+OK
+OK|OK OKEOKnOKtOKrOKaOKdOKaOK OK|OK OKEOKsOKpOKeOKrOKaOKdOKoOK OK|OK OKOOKbOKtOKeOKnOKiOKdOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OK‚OK†OKÅOK OK|OK OKaOK OK|OK OKaOK OK|OK OK‚OKúOKÖOK OK|OK
+OK|OK OK‚OK†OKÉOK OK|OK OKbOK OK|OK OKbOK OK|OK OK‚OKúOKÖOK OK|OK
+OK|OK OK‚OK†OKâOK OK|OK OKcOK OK|OK OKcOK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK1OK.OK2OK:OK OKPOKaOKlOKaOKbOKrOKaOKsOK OKCOKoOKmOKpOKlOKeOKtOKaOKsOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKwOKoOKrOKdOK_OKhOKoOKlOKaOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKTOKeOKsOKtOK OKpOKaOKlOKaOKbOKrOKaOK OK'OKhOKoOKlOKaOK'OK.OK"OK"OK"OK
+OK OK OK OK OKbOKrOKaOKiOKlOKlOKeOK OK=OK OK'OK‚OK†OKìOK‚OK†OKïOK‚OK†OKáOK‚OK†OKÅOK'OK
+OK OK OK OK OKrOKeOKsOKuOKlOKtOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKbOKrOKaOKiOKlOKlOKeOK_OKtOKoOK_OKtOKeOKxOKtOK(OKbOKrOKaOKiOKlOKlOKeOK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK[OK'OKtOKeOKxOKtOK'OK]OK OK=OK=OK OK'OKhOKoOKlOKaOK'OK
+OK`OK`OK`OK
+OK
+OK|OK OKEOKnOKtOKrOKaOKdOKaOK OK|OK OKEOKsOKpOKeOKrOKaOKdOKoOK OK|OK OKOOKbOKtOKeOKnOKiOKdOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OK‚OK†OKìOK‚OK†OKïOK‚OK†OKáOK‚OK†OKÅOK OK|OK OKhOKoOKlOKaOK OK|OK OKhOKoOKlOKaOK OK|OK OK‚OKúOKÖOK OK|OK
+OK|OK OK‚OK†OKçOK‚OK†OK•OK‚OK†OKùOK‚OK†OKôOK‚OK†OKïOK OK|OK OKmOKuOKnOKdOKoOK OK|OK OKmOKuOKnOKdOKoOK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK1OK.OK3OK:OK OKMOKaOKyOK√OK∫OKsOKcOKuOKlOKaOKsOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKcOKaOKpOKiOKtOKaOKlOK_OKlOKeOKtOKtOKeOKrOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKTOKeOKsOKtOK OKlOKeOKtOKrOKaOK OKmOKaOKyOK√OK∫OKsOKcOKuOKlOKaOK OKcOKoOKnOK OKiOKnOKdOKiOKcOKaOKdOKoOKrOK.OK"OK"OK"OK
+OK OK OK OK OKbOKrOKaOKiOKlOKlOKeOK OK=OK OK'OK‚OK†OK®OK‚OK†OKìOK‚OK†OKïOK‚OK†OKáOK‚OK†OKÅOK'OK OK OK#OK OKiOKnOKdOKiOKcOKaOKdOKoOKrOK OK+OK OKhOK OK+OK OKoOK OK+OK OKlOK OK+OK OKaOK
+OK OK OK OK OKrOKeOKsOKuOKlOKtOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKbOKrOKaOKiOKlOKlOKeOK_OKtOKoOK_OKtOKeOKxOKtOK(OKbOKrOKaOKiOKlOKlOKeOK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK[OK'OKtOKeOKxOKtOK'OK]OK OK=OK=OK OK'OKHOKoOKlOKaOK'OK
+OK`OK`OK`OK
+OK
+OK|OK OKEOKnOKtOKrOKaOKdOKaOK OK|OK OKEOKsOKpOKeOKrOKaOKdOKoOK OK|OK OKOOKbOKtOKeOKnOKiOKdOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OK‚OK†OK®OK‚OK†OKìOK OK|OK OKHOK OK|OK OKHOK OK|OK OK‚OKúOKÖOK OK|OK
+OK|OK OK‚OK†OK®OK‚OK†OKÅOK‚OK†OK®OK‚OK†OKÉOK OK|OK OKAOKBOK OK|OK OKAOKBOK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK1OK.OK4OK:OK OKNOK√OK∫OKmOKeOKrOKoOKsOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKnOKuOKmOKbOKeOKrOKsOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKTOKeOKsOKtOK OKnOK√OK∫OKmOKeOKrOKoOKsOK OKcOKoOKnOK OKiOKnOKdOKiOKcOKaOKdOKoOKrOK OKnOKuOKmOK√OK©OKrOKiOKcOKoOK.OK"OK"OK"OK
+OK OK OK OK OKbOKrOKaOKiOKlOKlOKeOK OK=OK OK'OK‚OK†OKºOK‚OK†OKÅOK‚OK†OKÉOK‚OK†OKâOK'OK OK OK#OK OK#OK1OK2OK3OK
+OK OK OK OK OKrOKeOKsOKuOKlOKtOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKbOKrOKaOKiOKlOKlOKeOK_OKtOKoOK_OKtOKeOKxOKtOK(OKbOKrOKaOKiOKlOKlOKeOK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK[OK'OKtOKeOKxOKtOK'OK]OK OK=OK=OK OK'OK1OK2OK3OK'OK
+OK`OK`OK`OK
+OK
+OK|OK OKEOKnOKtOKrOKaOKdOKaOK OK|OK OKEOKsOKpOKeOKrOKaOKdOKoOK OK|OK OKOOKbOKtOKeOKnOKiOKdOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OK‚OK†OKºOK‚OK†OKÅOK OK|OK OK1OK OK|OK OK1OK OK|OK OK‚OKúOKÖOK OK|OK
+OK|OK OK‚OK†OKºOK‚OK†OKÅOK‚OK†OKÉOK‚OK†OKâOK OK|OK OK1OK2OK3OK OK|OK OK1OK2OK3OK OK|OK OK‚OKúOKÖOK OK|OK
+OK|OK OK‚OK†OKºOK‚OK†OKöOK OK|OK OK0OK OK|OK OK0OK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK1OK.OK5OK:OK OKVOKoOKcOKaOKlOKeOKsOK OKAOKcOKeOKnOKtOKuOKaOKdOKaOKsOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKaOKcOKcOKeOKnOKtOKeOKdOK_OKvOKoOKwOKeOKlOKsOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKTOKeOKsOKtOK OKvOKoOKcOKaOKlOKeOKsOK OKcOKoOKnOK OKaOKcOKeOKnOKtOKoOK.OK"OK"OK"OK
+OK OK OK OK OKrOKeOKsOKuOKlOKtOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKbOKrOKaOKiOKlOKlOKeOK_OKtOKoOK_OKtOKeOKxOKtOK(OK'OK‚OK†OK∑OK'OK)OK OK OK#OK OK√OK°OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK[OK'OKtOKeOKxOKtOK'OK]OK OK=OK=OK OK'OK√OK°OK'OK
+OK`OK`OK`OK
+OK
+OK|OK OKEOKnOKtOKrOKaOKdOKaOK OK|OK OKEOKsOKpOKeOKrOKaOKdOKoOK OK|OK OKOOKbOKtOKeOKnOKiOKdOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OK‚OK†OK∑OK OK|OK OK√OK°OK OK|OK OK√OK°OK OK|OK OK‚OKúOKÖOK OK|OK
+OK|OK OK‚OK†OKÆOK OK|OK OK√OK©OK OK|OK OK√OK©OK OK|OK OK‚OKúOKÖOK OK|OK
+OK|OK OK‚OK†OKåOK OK|OK OK√OK≠OK OK|OK OK√OK≠OK OK|OK OK‚OKúOKÖOK OK|OK
+OK|OK OK‚OK†OK¨OK OK|OK OK√OK≥OK OK|OK OK√OK≥OK OK|OK OK‚OKúOKÖOK OK|OK
+OK|OK OK‚OK†OKæOK OK|OK OK√OK∫OK OK|OK OK√OK∫OK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK1OK.OK6OK:OK OKPOKuOKnOKtOKuOKaOKcOKiOK√OK≥OKnOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKpOKuOKnOKcOKtOKuOKaOKtOKiOKoOKnOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKTOKeOKsOKtOK OKsOKiOKgOKnOKoOKsOK OKdOKeOK OKpOKuOKnOKtOKuOKaOKcOKiOK√OK≥OKnOK.OK"OK"OK"OK
+OK OK OK OK OKrOKeOKsOKuOKlOKtOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKbOKrOKaOKiOKlOKlOKeOK_OKtOKoOK_OKtOKeOKxOKtOK(OK'OK‚OK†OK¢OK'OK)OK OK OK#OK OKpOKuOKnOKtOKoOK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK[OK'OKtOKeOKxOKtOK'OK]OK OK=OK=OK OK'OK.OK'OK
+OK`OK`OK`OK
+OK
+OK|OK OKEOKnOKtOKrOKaOKdOKaOK OK|OK OKEOKsOKpOKeOKrOKaOKdOKoOK OK|OK OKOOKbOKtOKeOKnOKiOKdOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OK‚OK†OK¢OK OK|OK OK.OK OK|OK OK.OK OK|OK OK‚OKúOKÖOK OK|OK
+OK|OK OK‚OK†OKÇOK OK|OK OK,OK OK|OK OK,OK OK|OK OK‚OKúOKÖOK OK|OK
+OK|OK OK‚OK†OK¶OK OK|OK OK?OK OK|OK OK?OK OK|OK OK‚OKúOKÖOK OK|OK
+OK|OK OK‚OK†OKñOK OK|OK OK!OK OK|OK OK!OK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK-OK-OK-OK
+OK
+OK#OK#OK OK2OK.OK OKTOKeOKsOKtOKsOK OKdOKeOK OKVOKaOKlOKiOKdOKaOKcOKiOK√OK≥OKnOK OKdOKeOK OKTOKrOKaOKdOKuOKcOKcOKiOKoOKnOKeOKsOK
+OK
+OK#OK#OK#OK OKCOKlOKaOKsOKeOK:OK OK`OKTOKeOKsOKtOKBOKrOKaOKiOKlOKlOKeOKTOKoOKSOKpOKaOKnOKiOKsOKhOKVOKaOKlOKiOKdOKaOKtOKiOKoOKnOK`OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK2OK.OK1OK:OK OKIOKnOKdOKiOKcOKaOKdOKoOKrOK OKdOKeOK OKMOKaOKyOK√OK∫OKsOKcOKuOKlOKaOK OKSOKoOKlOKoOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKcOKaOKpOKiOKtOKaOKlOK_OKiOKnOKdOKiOKcOKaOKtOKoOKrOK_OKaOKlOKoOKnOKeOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKIOKnOKdOKiOKcOKaOKdOKoOKrOK OKdOKeOK OKmOKaOKyOK√OK∫OKsOKcOKuOKlOKaOK OKsOKiOKnOK OKlOKeOKtOKrOKaOK OKsOKiOKgOKuOKiOKeOKnOKtOKeOK.OK"OK"OK"OK
+OK OK OK OK OKrOKeOKsOKuOKlOKtOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKbOKrOKaOKiOKlOKlOKeOK_OKtOKoOK_OKtOKeOKxOKtOK(OK'OK‚OK†OK®OK'OK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK[OK'OKvOKaOKlOKiOKdOK'OK]OK OK=OK=OK OKFOKaOKlOKsOKeOK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OK'OKmOKaOKyOK√OK∫OKsOKcOKuOKlOKaOK'OK OKiOKnOK OKrOKeOKsOKuOKlOKtOK[OK'OKeOKrOKrOKoOKrOKsOK'OK]OK[OK0OK]OK.OKlOKoOKwOKeOKrOK(OK)OK
+OK`OK`OK`OK
+OK
+OK|OK OKEOKnOKtOKrOKaOKdOKaOK OK|OK OKVOKaOKlOKiOKdOK OK|OK OKEOKrOKrOKoOKrOK OKEOKsOKpOKeOKrOKaOKdOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OK‚OK†OK®OK OK|OK OKFOKaOKlOKsOKeOK OK|OK OKIOKnOKdOKiOKcOKaOKdOKoOKrOK OKdOKeOK OKmOKaOKyOK√OK∫OKsOKcOKuOKlOKaOK OKsOKiOKnOK OKlOKeOKtOKrOKaOK OKsOKiOKgOKuOKiOKeOKnOKtOKeOK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK2OK.OK2OK:OK OKIOKnOKdOKiOKcOKaOKdOKoOKrOK OKdOKeOK OKNOK√OK∫OKmOKeOKrOKoOK OKSOKoOKlOKoOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKnOKuOKmOKbOKeOKrOK_OKiOKnOKdOKiOKcOKaOKtOKoOKrOK_OKaOKlOKoOKnOKeOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKIOKnOKdOKiOKcOKaOKdOKoOKrOK OKdOKeOK OKnOK√OK∫OKmOKeOKrOKoOK OKsOKiOKnOK OKdOK√OK≠OKgOKiOKtOKoOK OKsOKiOKgOKuOKiOKeOKnOKtOKeOK.OK"OK"OK"OK
+OK OK OK OK OKrOKeOKsOKuOKlOKtOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKbOKrOKaOKiOKlOKlOKeOK_OKtOKoOK_OKtOKeOKxOKtOK(OK'OK‚OK†OKºOK'OK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK[OK'OKvOKaOKlOKiOKdOK'OK]OK OK=OK=OK OKFOKaOKlOKsOKeOK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OK'OKnOK√OK∫OKmOKeOKrOKoOK'OK OKiOKnOK OKrOKeOKsOKuOKlOKtOK[OK'OKeOKrOKrOKoOKrOKsOK'OK]OK[OK0OK]OK.OKlOKoOKwOKeOKrOK(OK)OK
+OK`OK`OK`OK
+OK
+OK|OK OKEOKnOKtOKrOKaOKdOKaOK OK|OK OKVOKaOKlOKiOKdOK OK|OK OKEOKrOKrOKoOKrOK OKEOKsOKpOKeOKrOKaOKdOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OK‚OK†OKºOK OK|OK OKFOKaOKlOKsOKeOK OK|OK OKIOKnOKdOKiOKcOKaOKdOKoOKrOK OKdOKeOK OKnOK√OK∫OKmOKeOKrOKoOK OKsOKiOKnOK OKdOK√OK≠OKgOKiOKtOKoOK OKsOKiOKgOKuOKiOKeOKnOKtOKeOK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK2OK.OK3OK:OK OKPOKaOKtOKrOK√OK≥OKnOK OKNOKoOK OKROKeOKcOKoOKnOKoOKcOKiOKdOKoOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKuOKnOKrOKeOKcOKoOKgOKnOKiOKzOKeOKdOK_OKpOKaOKtOKtOKeOKrOKnOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKPOKaOKtOKrOK√OK≥OKnOK OKBOKrOKaOKiOKlOKlOKeOK OKnOKoOK OKrOKeOKcOKoOKnOKoOKcOKiOKdOKoOK.OK"OK"OK"OK
+OK OK OK OK OKrOKeOKsOKuOKlOKtOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKbOKrOKaOKiOKlOKlOKeOK_OKtOKoOK_OKtOKeOKxOKtOK(OK'OK‚OK†OKøOK'OK)OK OK OK#OK OKtOKoOKdOKoOKsOK OKlOKoOKsOK OKpOKuOKnOKtOKoOKsOK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK[OK'OKvOKaOKlOKiOKdOK'OK]OK OK=OK=OK OKFOKaOKlOKsOKeOK
+OK`OK`OK`OK
+OK
+OK|OK OKEOKnOKtOKrOKaOKdOKaOK OK|OK OKVOKaOKlOKiOKdOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OK‚OK†OKøOK OK|OK OKFOKaOKlOKsOKeOK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK2OK.OK4OK:OK OKSOKeOKcOKuOKeOKnOKcOKiOKaOK OKPOKaOKrOKcOKiOKaOKlOKmOKeOKnOKtOKeOK OKVOK√OK°OKlOKiOKdOKaOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKpOKaOKrOKtOKiOKaOKlOK_OKvOKaOKlOKiOKdOK_OKsOKeOKqOKuOKeOKnOKcOKeOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKSOKeOKcOKuOKeOKnOKcOKiOKaOK OKcOKoOKnOK OKpOKaOKrOKtOKeOK OKvOK√OK°OKlOKiOKdOKaOK OKyOK OKpOKaOKrOKtOKeOK OKiOKnOKvOK√OK°OKlOKiOKdOKaOK.OK"OK"OK"OK
+OK OK OK OK OKrOKeOKsOKuOKlOKtOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKbOKrOKaOKiOKlOKlOKeOK_OKtOKoOK_OKtOKeOKxOKtOK(OK'OK‚OK†OKìOK‚OK†OKïOK‚OK†OKáOK‚OK†OKÅOK‚OK†OK®OK'OK)OK OK OK#OK OKhOKoOKlOKaOK OK+OK OKiOKnOKdOKiOKcOKaOKdOKoOKrOK OKsOKoOKlOKoOK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK[OK'OKvOKaOKlOKiOKdOK'OK]OK OK=OK=OK OKFOKaOKlOKsOKeOK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OK'OKhOKoOKlOKaOK'OK OKiOKnOK OKrOKeOKsOKuOKlOKtOK[OK'OKtOKeOKxOKtOK'OK]OK.OKlOKoOKwOKeOKrOK(OK)OK
+OK`OK`OK`OK
+OK
+OK|OK OKEOKnOKtOKrOKaOKdOKaOK OK|OK OKTOKeOKxOKtOK OK|OK OKVOKaOKlOKiOKdOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OK‚OK†OKìOK‚OK†OKïOK‚OK†OKáOK‚OK†OKÅOK‚OK†OK®OK OK|OK OKhOKoOKlOKaOK OK(OKpOKaOKrOKcOKiOKaOKlOK)OK OK|OK OKFOKaOKlOKsOKeOK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK-OK-OK-OK
+OK
+OK#OK#OK OK3OK.OK OKTOKeOKsOKtOKsOK OKdOKeOK OKEOKdOKiOKcOKiOK√OK≥OKnOK OKdOKeOK OKSOKeOKcOKuOKeOKnOKcOKiOKaOK
+OK
+OK#OK#OK#OK OKCOKlOKaOKsOKeOK:OK OK`OKTOKeOKsOKtOKSOKeOKqOKuOKeOKnOKcOKeOKEOKdOKiOKtOKiOKnOKgOK`OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK3OK.OK1OK:OK OKEOKlOKiOKmOKiOKnOKaOKrOK OKCOKeOKlOKdOKaOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKdOKeOKlOKeOKtOKeOK_OKcOKeOKlOKlOK_OKfOKrOKoOKmOK_OKsOKeOKqOKuOKeOKnOKcOKeOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKEOKlOKiOKmOKiOKnOKaOKrOK OKuOKnOKaOK OKcOKeOKlOKdOKaOK OKdOKeOK OKlOKaOK OKsOKeOKcOKuOKeOKnOKcOKiOKaOK.OK"OK"OK"OK
+OK OK OK OK OKsOKeOKqOKuOKeOKnOKcOKeOK OK=OK OK[OK'OK‚OK†OKìOK'OK,OK OK'OK‚OK†OKïOK'OK,OK OK'OK‚OK†OKáOK'OK,OK OK'OK‚OK†OKÅOK'OK]OK OK OK#OK OKhOK-OKoOK-OKlOK-OKaOK
+OK OK OK OK OKdOKeOKlOK OKsOKeOKqOKuOKeOKnOKcOKeOK[OK1OK]OK OK OK#OK OKEOKlOKiOKmOKiOKnOKaOKrOK OK'OKoOK'OK
+OK OK OK OK OK
+OK OK OK OK OKbOKrOKaOKiOKlOKlOKeOK OK=OK OK'OK'OK.OKjOKoOKiOKnOK(OKsOKeOKqOKuOKeOKnOKcOKeOK)OK
+OK OK OK OK OKrOKeOKsOKuOKlOKtOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKbOKrOKaOKiOKlOKlOKeOK_OKtOKoOK_OKtOKeOKxOKtOK(OKbOKrOKaOKiOKlOKlOKeOK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK[OK'OKtOKeOKxOKtOK'OK]OK OK=OK=OK OK'OKhOKlOKaOK'OK
+OK`OK`OK`OK
+OK
+OK|OK OKSOKeOKcOKuOKeOKnOKcOKiOKaOK OKOOKrOKiOKgOKiOKnOKaOKlOK OK|OK OKAOKcOKcOKiOK√OK≥OKnOK OK|OK OKROKeOKsOKuOKlOKtOKaOKdOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OKhOK-OKoOK-OKlOK-OKaOK OK|OK OKEOKlOKiOKmOKiOKnOKaOKrOK OK'OKoOK'OK OK|OK OKhOKlOKaOK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK3OK.OK2OK:OK OKIOKnOKsOKeOKrOKtOKaOKrOK OKCOKeOKlOKdOKaOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKiOKnOKsOKeOKrOKtOK_OKcOKeOKlOKlOK_OKiOKnOK_OKsOKeOKqOKuOKeOKnOKcOKeOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKIOKnOKsOKeOKrOKtOKaOKrOK OKcOKeOKlOKdOKaOK OKeOKnOK OKmOKeOKdOKiOKoOK OKdOKeOK OKlOKaOK OKsOKeOKcOKuOKeOKnOKcOKiOKaOK.OK"OK"OK"OK
+OK OK OK OK OKsOKeOKqOKuOKeOKnOKcOKeOK OK=OK OK[OK'OK‚OK†OKìOK'OK,OK OK'OK‚OK†OKáOK'OK,OK OK'OK‚OK†OKÅOK'OK]OK OK OK#OK OKhOK-OKlOK-OKaOK
+OK OK OK OK OKsOKeOKqOKuOKeOKnOKcOKeOK.OKiOKnOKsOKeOKrOKtOK(OK1OK,OK OK'OK‚OK†OKïOK'OK)OK OK OK#OK OKIOKnOKsOKeOKrOKtOKaOKrOK OK'OKoOK'OK
+OK OK OK OK OK
+OK OK OK OK OKbOKrOKaOKiOKlOKlOKeOK OK=OK OK'OK'OK.OKjOKoOKiOKnOK(OKsOKeOKqOKuOKeOKnOKcOKeOK)OK
+OK OK OK OK OKrOKeOKsOKuOKlOKtOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKbOKrOKaOKiOKlOKlOKeOK_OKtOKoOK_OKtOKeOKxOKtOK(OKbOKrOKaOKiOKlOKlOKeOK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK[OK'OKtOKeOKxOKtOK'OK]OK OK=OK=OK OK'OKhOKoOKlOKaOK'OK
+OK`OK`OK`OK
+OK
+OK|OK OKSOKeOKcOKuOKeOKnOKcOKiOKaOK OKOOKrOKiOKgOKiOKnOKaOKlOK OK|OK OKAOKcOKcOKiOK√OK≥OKnOK OK|OK OKROKeOKsOKuOKlOKtOKaOKdOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OKhOK-OKlOK-OKaOK OK|OK OKIOKnOKsOKeOKrOKtOKaOKrOK OK'OKoOK'OK OKpOKoOKsOK OK1OK OK|OK OKhOKoOKlOKaOK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK3OK.OK3OK:OK OKIOKnOKsOKeOKrOKtOKaOKrOK OKIOKnOKdOKiOKcOKaOKdOKoOKrOK OKdOKeOK OKMOKaOKyOK√OK∫OKsOKcOKuOKlOKaOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKiOKnOKsOKeOKrOKtOK_OKcOKaOKpOKiOKtOKaOKlOK_OKiOKnOKdOKiOKcOKaOKtOKoOKrOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKIOKnOKsOKeOKrOKtOKaOKrOK OKiOKnOKdOKiOKcOKaOKdOKoOKrOK OKdOKeOK OKmOKaOKyOK√OK∫OKsOKcOKuOKlOKaOK.OK"OK"OK"OK
+OK OK OK OK OKsOKeOKqOKuOKeOKnOKcOKeOK OK=OK OK[OK'OK‚OK†OKìOK'OK,OK OK'OK‚OK†OKïOK'OK,OK OK'OK‚OK†OKáOK'OK,OK OK'OK‚OK†OKÅOK'OK]OK
+OK OK OK OK OKsOKeOKqOKuOKeOKnOKcOKeOK.OKiOKnOKsOKeOKrOKtOK(OK0OK,OK OK'OK‚OK†OK®OK'OK)OK OK OK#OK OKAOKgOKrOKeOKgOKaOKrOK OKmOKaOKyOK√OK∫OKsOKcOKuOKlOKaOK OKaOKlOK OKiOKnOKiOKcOKiOKoOK
+OK OK OK OK OK
+OK OK OK OK OKbOKrOKaOKiOKlOKlOKeOK OK=OK OK'OK'OK.OKjOKoOKiOKnOK(OKsOKeOKqOKuOKeOKnOKcOKeOK)OK
+OK OK OK OK OKrOKeOKsOKuOKlOKtOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKbOKrOKaOKiOKlOKlOKeOK_OKtOKoOK_OKtOKeOKxOKtOK(OKbOKrOKaOKiOKlOKlOKeOK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK[OK'OKtOKeOKxOKtOK'OK]OK OK=OK=OK OK'OKHOKoOKlOKaOK'OK
+OK`OK`OK`OK
+OK
+OK|OK OKSOKeOKcOKuOKeOKnOKcOKiOKaOK OKOOKrOKiOKgOKiOKnOKaOKlOK OK|OK OKAOKcOKcOKiOK√OK≥OKnOK OK|OK OKROKeOKsOKuOKlOKtOKaOKdOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OKhOK-OKoOK-OKlOK-OKaOK OK|OK OKIOKnOKsOKeOKrOKtOKaOKrOK OK‚OK†OK®OK OKpOKoOKsOK OK0OK OK|OK OKHOKoOKlOKaOK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK3OK.OK4OK:OK OKLOKiOKmOKpOKiOKaOKrOK OKSOKeOKcOKuOKeOKnOKcOKiOKaOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKcOKlOKeOKaOKrOK_OKsOKeOKqOKuOKeOKnOKcOKeOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKLOKiOKmOKpOKiOKaOKrOK OKtOKoOKdOKaOK OKlOKaOK OKsOKeOKcOKuOKeOKnOKcOKiOKaOK.OK"OK"OK"OK
+OK OK OK OK OKsOKeOKqOKuOKeOKnOKcOKeOK OK=OK OK[OK'OK‚OK†OKìOK'OK,OK OK'OK‚OK†OKïOK'OK,OK OK'OK‚OK†OKáOK'OK,OK OK'OK‚OK†OKÅOK'OK]OK
+OK OK OK OK OKsOKeOKqOKuOKeOKnOKcOKeOK.OKcOKlOKeOKaOKrOK(OK)OK
+OK OK OK OK OK
+OK OK OK OK OKbOKrOKaOKiOKlOKlOKeOK OK=OK OK'OK'OK.OKjOKoOKiOKnOK(OKsOKeOKqOKuOKeOKnOKcOKeOK)OK
+OK OK OK OK OKrOKeOKsOKuOKlOKtOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKbOKrOKaOKiOKlOKlOKeOK_OKtOKoOK_OKtOKeOKxOKtOK(OKbOKrOKaOKiOKlOKlOKeOK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK[OK'OKtOKeOKxOKtOK'OK]OK OK=OK=OK OK'OK'OK
+OK`OK`OK`OK
+OK
+OK|OK OKAOKcOKcOKiOK√OK≥OKnOK OK|OK OKROKeOKsOKuOKlOKtOKaOKdOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OKCOKlOKeOKaOKrOK OK|OK OK'OK'OK OK(OKvOKaOKcOK√OK≠OKoOK)OK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK-OK-OK-OK
+OK
+OK#OK#OK OK4OK.OK OKTOKeOKsOKtOKsOK OKdOKeOK OKFOKuOKnOKcOKiOKoOKnOKaOKlOKiOKdOKaOKdOK OKdOKeOK OKEOKsOKpOKeOKjOKoOK
+OK
+OK#OK#OK#OK OKCOKlOKaOKsOKeOK:OK OK`OKTOKeOKsOKtOKBOKrOKaOKiOKlOKlOKeOKMOKiOKrOKrOKoOKrOK`OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK4OK.OK1OK:OK OKEOKsOKpOKeOKjOKoOK OKdOKeOK OKPOKuOKnOKtOKoOKsOK OKIOKnOKdOKiOKvOKiOKdOKuOKaOKlOKeOKsOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKmOKiOKrOKrOKoOKrOK_OKsOKiOKnOKgOKlOKeOK_OKdOKoOKtOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKEOKsOKpOKeOKjOKoOK OKdOKeOK OKpOKuOKnOKtOKoOKsOK OKiOKnOKdOKiOKvOKiOKdOKuOKaOKlOKeOKsOK.OK"OK"OK"OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKmOKiOKrOKrOKoOKrOK_OKbOKrOKaOKiOKlOKlOKeOK_OKdOKoOKtOKsOK(OK(OK1OK,OK)OK)OK OK=OK=OK OK(OK4OK,OK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKmOKiOKrOKrOKoOKrOK_OKbOKrOKaOKiOKlOKlOKeOK_OKdOKoOKtOKsOK(OK(OK4OK,OK)OK)OK OK=OK=OK OK(OK1OK,OK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKmOKiOKrOKrOKoOKrOK_OKbOKrOKaOKiOKlOKlOKeOK_OKdOKoOKtOKsOK(OK(OK2OK,OK)OK)OK OK=OK=OK OK(OK5OK,OK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKmOKiOKrOKrOKoOKrOK_OKbOKrOKaOKiOKlOKlOKeOK_OKdOKoOKtOKsOK(OK(OK5OK,OK)OK)OK OK=OK=OK OK(OK2OK,OK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKmOKiOKrOKrOKoOKrOK_OKbOKrOKaOKiOKlOKlOKeOK_OKdOKoOKtOKsOK(OK(OK3OK,OK)OK)OK OK=OK=OK OK(OK6OK,OK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKmOKiOKrOKrOKoOKrOK_OKbOKrOKaOKiOKlOKlOKeOK_OKdOKoOKtOKsOK(OK(OK6OK,OK)OK)OK OK=OK=OK OK(OK3OK,OK)OK
+OK`OK`OK`OK
+OK
+OK|OK OKEOKnOKtOKrOKaOKdOKaOK OK|OK OKEOKsOKpOKeOKrOKaOKdOKoOK OK|OK OKOOKbOKtOKeOKnOKiOKdOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OK(OK1OK,OK)OK OK|OK OK(OK4OK,OK)OK OK|OK OK(OK4OK,OK)OK OK|OK OK‚OKúOKÖOK OK|OK
+OK|OK OK(OK4OK,OK)OK OK|OK OK(OK1OK,OK)OK OK|OK OK(OK1OK,OK)OK OK|OK OK‚OKúOKÖOK OK|OK
+OK|OK OK(OK2OK,OK)OK OK|OK OK(OK5OK,OK)OK OK|OK OK(OK5OK,OK)OK OK|OK OK‚OKúOKÖOK OK|OK
+OK|OK OK(OK5OK,OK)OK OK|OK OK(OK2OK,OK)OK OK|OK OK(OK2OK,OK)OK OK|OK OK‚OKúOKÖOK OK|OK
+OK|OK OK(OK3OK,OK)OK OK|OK OK(OK6OK,OK)OK OK|OK OK(OK6OK,OK)OK OK|OK OK‚OKúOKÖOK OK|OK
+OK|OK OK(OK6OK,OK)OK OK|OK OK(OK3OK,OK)OK OK|OK OK(OK3OK,OK)OK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK4OK.OK2OK:OK OKEOKsOKpOKeOKjOKoOK OKdOKeOK OKMOK√OK∫OKlOKtOKiOKpOKlOKeOKsOK OKPOKuOKnOKtOKoOKsOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKmOKiOKrOKrOKoOKrOK_OKmOKuOKlOKtOKiOKpOKlOKeOK_OKdOKoOKtOKsOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKEOKsOKpOKeOKjOKoOK OKdOKeOK OKmOK√OK∫OKlOKtOKiOKpOKlOKeOKsOK OKpOKuOKnOKtOKoOKsOK.OK"OK"OK"OK
+OK OK OK OK OK#OK OKLOKeOKtOKrOKaOK OK'OKhOK'OK OK=OK OK(OK1OK,OK2OK,OK5OK)OK OK-OK>OK OKeOKsOKpOKeOKjOKoOK OK=OK OK(OK2OK,OK4OK,OK5OK)OK
+OK OK OK OK OKrOKeOKsOKuOKlOKtOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKmOKiOKrOKrOKoOKrOK_OKbOKrOKaOKiOKlOKlOKeOK_OKdOKoOKtOKsOK(OK(OK1OK,OK OK2OK,OK OK5OK)OK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK OK=OK=OK OK(OK2OK,OK OK4OK,OK OK5OK)OK
+OK`OK`OK`OK
+OK
+OK|OK OKEOKnOKtOKrOKaOKdOKaOK OK|OK OKEOKsOKpOKeOKrOKaOKdOKoOK OK|OK OKOOKbOKtOKeOKnOKiOKdOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OK(OK1OK,OK2OK,OK5OK)OK OK|OK OK(OK2OK,OK4OK,OK5OK)OK OK|OK OK(OK2OK,OK4OK,OK5OK)OK OK|OK OK‚OKúOKÖOK OK|OK
+OK|OK OK(OK1OK,OK3OK,OK5OK)OK OK|OK OK(OK2OK,OK4OK,OK6OK)OK OK|OK OK(OK2OK,OK4OK,OK6OK)OK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK4OK.OK3OK:OK OKEOKsOKpOKeOKjOKoOK OKdOKeOK OKTOKuOKpOKlOKaOK OKVOKaOKcOK√OK≠OKaOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKmOKiOKrOKrOKoOKrOK_OKeOKmOKpOKtOKyOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKEOKsOKpOKeOKjOKoOK OKdOKeOK OKtOKuOKpOKlOKaOK OKvOKaOKcOK√OK≠OKaOK OK(OKeOKsOKpOKaOKcOKiOKoOK)OK.OK"OK"OK"OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKmOKiOKrOKrOKoOKrOK_OKbOKrOKaOKiOKlOKlOKeOK_OKdOKoOKtOKsOK(OKtOKuOKpOKlOKeOK(OK)OK)OK OK=OK=OK OKtOKuOKpOKlOKeOK(OK)OK
+OK`OK`OK`OK
+OK
+OK|OK OKEOKnOKtOKrOKaOKdOKaOK OK|OK OKEOKsOKpOKeOKrOKaOKdOKoOK OK|OK OKOOKbOKtOKeOKnOKiOKdOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OK(OK)OK OK|OK OK(OK)OK OK|OK OK(OK)OK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK4OK.OK4OK:OK OKEOKsOKpOKeOKjOKoOK OKdOKeOKlOK OKIOKnOKdOKiOKcOKaOKdOKoOKrOK OKdOKeOK OKMOKaOKyOK√OK∫OKsOKcOKuOKlOKaOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKmOKiOKrOKrOKoOKrOK_OKcOKaOKpOKiOKtOKaOKlOK_OKsOKiOKgOKnOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKEOKsOKpOKeOKjOKoOK OKdOKeOKlOK OKiOKnOKdOKiOKcOKaOKdOKoOKrOK OKdOKeOK OKmOKaOKyOK√OK∫OKsOKcOKuOKlOKaOK.OK"OK"OK"OK
+OK OK OK OK OK#OK OK(OK4OK,OK6OK)OK OK-OK>OK OKeOKsOKpOKeOKjOKoOK OK=OK OK(OK1OK,OK3OK)OK
+OK OK OK OK OKrOKeOKsOKuOKlOKtOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKmOKiOKrOKrOKoOKrOK_OKbOKrOKaOKiOKlOKlOKeOK_OKdOKoOKtOKsOK(OK(OK4OK,OK OK6OK)OK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK OK=OK=OK OK(OK1OK,OK OK3OK)OK
+OK`OK`OK`OK
+OK
+OK|OK OKEOKnOKtOKrOKaOKdOKaOK OK|OK OKEOKsOKpOKeOKrOKaOKdOKoOK OK|OK OKOOKbOKtOKeOKnOKiOKdOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OK(OK4OK,OK6OK)OK OK|OK OK(OK1OK,OK3OK)OK OK|OK OK(OK1OK,OK3OK)OK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK4OK.OK5OK:OK OKEOKsOKpOKeOKjOKoOK OKdOKeOKlOK OKIOKnOKdOKiOKcOKaOKdOKoOKrOK OKdOKeOK OKNOK√OK∫OKmOKeOKrOKoOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKmOKiOKrOKrOKoOKrOK_OKnOKuOKmOKbOKeOKrOK_OKsOKiOKgOKnOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKEOKsOKpOKeOKjOKoOK OKdOKeOKlOK OKiOKnOKdOKiOKcOKaOKdOKoOKrOK OKdOKeOK OKnOK√OK∫OKmOKeOKrOKoOK.OK"OK"OK"OK
+OK OK OK OK OK#OK OK(OK3OK,OK4OK,OK5OK,OK6OK)OK OK-OK>OK OK3OK-OK>OK6OK,OK OK4OK-OK>OK1OK,OK OK5OK-OK>OK2OK,OK OK6OK-OK>OK3OK OK=OK OK(OK1OK,OK2OK,OK3OK,OK6OK)OK
+OK OK OK OK OKrOKeOKsOKuOKlOKtOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKmOKiOKrOKrOKoOKrOK_OKbOKrOKaOKiOKlOKlOKeOK_OKdOKoOKtOKsOK(OK(OK3OK,OK OK4OK,OK OK5OK,OK OK6OK)OK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK OK=OK=OK OK(OK1OK,OK OK2OK,OK OK3OK,OK OK6OK)OK
+OK`OK`OK`OK
+OK
+OK|OK OKEOKnOKtOKrOKaOKdOKaOK OK|OK OKEOKsOKpOKeOKrOKaOKdOKoOK OK|OK OKOOKbOKtOKeOKnOKiOKdOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OK(OK3OK,OK4OK,OK5OK,OK6OK)OK OK|OK OK(OK1OK,OK2OK,OK3OK,OK6OK)OK OK|OK OK(OK1OK,OK2OK,OK3OK,OK6OK)OK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK4OK.OK6OK:OK OKTOKeOKxOKtOKoOK OKSOKiOKmOKpOKlOKeOK OKEOKsOKpOKeOKjOKaOKdOKoOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKtOKeOKxOKtOK_OKtOKoOK_OKbOKrOKaOKiOKlOKlOKeOK_OKdOKoOKtOKsOK_OKmOKiOKrOKrOKoOKrOK_OKsOKiOKmOKpOKlOKeOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKCOKoOKnOKvOKeOKrOKsOKiOK√OK≥OKnOK OKaOK OKpOKuOKnOKtOKoOKsOK OKeOKsOKpOKeOKjOKoOK OK-OK OKtOKeOKxOKtOKoOK OKsOKiOKmOKpOKlOKeOK.OK"OK"OK"OK
+OK OK OK OK OK#OK OK'OKaOKbOK'OK OKeOKsOKpOKeOKjOKoOK OK=OK OK[OK(OK4OK,OK5OK)OK,OK OK(OK4OK,OK)OK]OK OK-OK OKiOKnOKvOKeOKrOKtOKiOKdOKoOK OKyOK OKeOKsOKpOKeOKjOKaOKdOKoOK
+OK OK OK OK OKrOKeOKsOKuOKlOKtOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKtOKeOKxOKtOK_OKtOKoOK_OKbOKrOKaOKiOKlOKlOKeOK_OKdOKoOKtOKsOK_OKmOKiOKrOKrOKoOKrOK(OK'OKaOKbOK'OK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK OK=OK=OK OK[OK(OK4OK,OK OK5OK)OK,OK OK(OK4OK,OK)OK]OK
+OK`OK`OK`OK
+OK
+OK|OK OKEOKnOKtOKrOKaOKdOKaOK OK|OK OKEOKsOKpOKeOKrOKaOKdOKoOK OK|OK OKOOKbOKtOKeOKnOKiOKdOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OK'OKaOKbOK'OK OK|OK OK[OK(OK4OK,OK5OK)OK,OK OK(OK4OK,OK)OK]OK OK|OK OK[OK(OK4OK,OK5OK)OK,OK OK(OK4OK,OK)OK]OK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK4OK.OK7OK:OK OKPOKrOKeOKsOKeOKrOKvOKaOKcOKiOK√OK≥OKnOK OKdOKeOK OKLOKoOKnOKgOKiOKtOKuOKdOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKmOKiOKrOKrOKoOKrOK_OKpOKrOKeOKsOKeOKrOKvOKeOKsOK_OKlOKeOKnOKgOKtOKhOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKEOKlOK OKeOKsOKpOKeOKjOKoOK OKpOKrOKeOKsOKeOKrOKvOKaOK OKlOKaOK OKlOKoOKnOKgOKiOKtOKuOKdOK OKdOKeOK OKlOKaOK OKsOKeOKcOKuOKeOKnOKcOKiOKaOK.OK"OK"OK"OK
+OK OK OK OK OKtOKeOKxOKtOK OK=OK OK"OKhOKoOKlOKaOK OKmOKuOKnOKdOKoOK"OK
+OK OK OK OK OKnOKoOKrOKmOKaOKlOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKtOKeOKxOKtOK_OKtOKoOK_OKbOKrOKaOKiOKlOKlOKeOK_OKdOKoOKtOKsOK(OKtOKeOKxOKtOK)OK
+OK OK OK OK OKmOKiOKrOKrOKoOKrOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKtOKeOKxOKtOK_OKtOKoOK_OKbOKrOKaOKiOKlOKlOKeOK_OKdOKoOKtOKsOK_OKmOKiOKrOKrOKoOKrOK(OKtOKeOKxOKtOK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKlOKeOKnOK(OKnOKoOKrOKmOKaOKlOK)OK OK=OK=OK OKlOKeOKnOK(OKmOKiOKrOKrOKoOKrOK)OK
+OK`OK`OK`OK
+OK
+OK|OK OKTOKeOKxOKtOKoOK OK|OK OKLOKoOKnOKgOKiOKtOKuOKdOK OKNOKoOKrOKmOKaOKlOK OK|OK OKLOKoOKnOKgOKiOKtOKuOKdOK OKEOKsOKpOKeOKjOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OK"OKhOKoOKlOKaOK OKmOKuOKnOKdOKoOK"OK OK|OK OK1OK0OK OK|OK OK1OK0OK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK4OK.OK8OK:OK OKDOKoOKbOKlOKeOK OKEOKsOKpOKeOKjOKoOK OKROKeOKtOKoOKrOKnOKaOK OKOOKrOKiOKgOKiOKnOKaOKlOK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKdOKoOKuOKbOKlOKeOK_OKmOKiOKrOKrOKoOKrOK_OKrOKeOKtOKuOKrOKnOKsOK_OKoOKrOKiOKgOKiOKnOKaOKlOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKAOKpOKlOKiOKcOKaOKrOK OKeOKsOKpOKeOKjOKoOK OKdOKoOKsOK OKvOKeOKcOKeOKsOK OKdOKeOKvOKuOKeOKlOKvOKeOK OKeOKlOK OKoOKrOKiOKgOKiOKnOKaOKlOK.OK"OK"OK"OK
+OK OK OK OK OKoOKrOKiOKgOKiOKnOKaOKlOK OK=OK OK(OK1OK,OK OK2OK,OK OK5OK)OK
+OK OK OK OK OKoOKnOKcOKeOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKmOKiOKrOKrOKoOKrOK_OKbOKrOKaOKiOKlOKlOKeOK_OKdOKoOKtOKsOK(OKoOKrOKiOKgOKiOKnOKaOKlOK)OK
+OK OK OK OK OKtOKwOKiOKcOKeOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKmOKiOKrOKrOKoOKrOK_OKbOKrOKaOKiOKlOKlOKeOK_OKdOKoOKtOKsOK(OKoOKnOKcOKeOK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKtOKwOKiOKcOKeOK OK=OK=OK OKoOKrOKiOKgOKiOKnOKaOKlOK
+OK`OK`OK`OK
+OK
+OK|OK OKOOKrOKiOKgOKiOKnOKaOKlOK OK|OK OKUOKnOKaOK OKvOKeOKzOK OK|OK OKDOKoOKsOK OKvOKeOKcOKeOKsOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OK(OK1OK,OK2OK,OK5OK)OK OK|OK OK(OK2OK,OK4OK,OK5OK)OK OK|OK OK(OK1OK,OK2OK,OK5OK)OK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK#OK#OK#OK#OK OKTOKeOKsOKtOK OK4OK.OK9OK:OK OKCOKeOKlOKdOKaOK OKCOKoOKmOKpOKlOKeOKtOKaOK OK(OKSOKiOKmOK√OK©OKtOKrOKiOKcOKaOK)OK
+OK
+OK`OK`OK`OKpOKyOKtOKhOKoOKnOK
+OKdOKeOKfOK OKtOKeOKsOKtOK_OKmOKiOKrOKrOKoOKrOK_OKfOKuOKlOKlOK_OKcOKeOKlOKlOK(OKsOKeOKlOKfOK,OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK)OK:OK
+OK OK OK OK OK"OK"OK"OKEOKsOKpOKeOKjOKoOK OKdOKeOK OKcOKeOKlOKdOKaOK OKcOKoOKmOKpOKlOKeOKtOKaOK OK-OK OKeOKsOK OKsOKiOKmOK√OK©OKtOKrOKiOKcOKaOK.OK"OK"OK"OK
+OK OK OK OK OKfOKuOKlOKlOK_OKcOKeOKlOKlOK OK=OK OK(OK1OK,OK OK2OK,OK OK3OK,OK OK4OK,OK OK5OK,OK OK6OK)OK
+OK OK OK OK OKrOKeOKsOKuOKlOKtOK OK=OK OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKmOKiOKrOKrOKoOKrOK_OKbOKrOKaOKiOKlOKlOKeOK_OKdOKoOKtOKsOK(OKfOKuOKlOKlOK_OKcOKeOKlOKlOK)OK
+OK OK OK OK OKaOKsOKsOKeOKrOKtOK OKrOKeOKsOKuOKlOKtOK OK=OK=OK OKfOKuOKlOKlOK_OKcOKeOKlOKlOK
+OK`OK`OK`OK
+OK
+OK|OK OKEOKnOKtOKrOKaOKdOKaOK OK|OK OKEOKsOKpOKeOKrOKaOKdOKoOK OK|OK OKOOKbOKtOKeOKnOKiOKdOKoOK OK|OK OKEOKsOKtOKaOKdOKoOK OK|OK
+OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK-OK-OK|OK-OK-OK-OK-OK-OK-OK-OK-OK|OK
+OK|OK OK(OK1OK,OK2OK,OK3OK,OK4OK,OK5OK,OK6OK)OK OK|OK OK(OK1OK,OK2OK,OK3OK,OK4OK,OK5OK,OK6OK)OK OK|OK OK(OK1OK,OK2OK,OK3OK,OK4OK,OK5OK,OK6OK)OK OK|OK OK‚OKúOKÖOK OK|OK
+OK
+OK-OK-OK-OK
+OK
+OK#OK#OK OKEOKjOKeOKcOKuOKcOKiOK√OK≥OKnOK OKdOKeOK OKTOKeOKsOKtOKsOK
+OK
+OK#OK#OK#OK OKCOKoOKmOKaOKnOKdOKoOK
+OK
+OK`OK`OK`OKbOKaOKsOKhOK
+OKpOKyOKtOKeOKsOKtOK OKtOKeOKsOKtOKsOK/OKtOKeOKsOKtOK_OKbOKrOKaOKiOKlOKlOKeOK_OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKpOKyOK OK-OKvOK
+OK`OK`OK`OK
+OK
+OK#OK#OK#OK OKROKeOKsOKuOKlOKtOKaOKdOKoOK
+OK
+OK`OK`OK`OK
+OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK OKtOKeOKsOKtOK OKsOKeOKsOKsOKiOKoOKnOK OKsOKtOKaOKrOKtOKsOK OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK
+OKcOKoOKlOKlOKeOKcOKtOKeOKdOK OK7OK1OK OKiOKtOKeOKmOKsOK
+OK
+OKtOKeOKsOKtOKsOK/OKtOKeOKsOKtOK_OKbOKrOKaOKiOKlOKlOKeOK_OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKpOKyOK:OK:OKTOKeOKsOKtOKBOKrOKaOKiOKlOKlOKeOKAOKlOKpOKhOKaOKbOKeOKtOK:OK:OKtOKeOKsOKtOK_OKsOKeOKrOKiOKeOK_OK1OK_OKlOKeOKtOKtOKeOKrOKsOK OKPOKAOKSOKSOKEOKDOK
+OKtOKeOKsOKtOKsOK/OKtOKeOKsOKtOK_OKbOKrOKaOKiOKlOKlOKeOK_OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKpOKyOK:OK:OKTOKeOKsOKtOKBOKrOKaOKiOKlOKlOKeOKAOKlOKpOKhOKaOKbOKeOKtOK:OK:OKtOKeOKsOKtOK_OKsOKeOKrOKiOKeOK_OK2OK_OKlOKeOKtOKtOKeOKrOKsOK OKPOKAOKSOKSOKEOKDOK
+OKtOKeOKsOKtOKsOK/OKtOKeOKsOKtOK_OKbOKrOKaOKiOKlOKlOKeOK_OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKpOKyOK:OK:OKTOKeOKsOKtOKBOKrOKaOKiOKlOKlOKeOKAOKlOKpOKhOKaOKbOKeOKtOK:OK:OKtOKeOKsOKtOK_OKsOKeOKrOKiOKeOK_OK3OK_OKlOKeOKtOKtOKeOKrOKsOK OKPOKAOKSOKSOKEOKDOK
+OK.OK.OK.OK
+OKtOKeOKsOKtOKsOK/OKtOKeOKsOKtOK_OKbOKrOKaOKiOKlOKlOKeOK_OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKpOKyOK:OK:OKTOKeOKsOKtOKBOKrOKaOKiOKlOKlOKeOKMOKiOKrOKrOKoOKrOK:OK:OKtOKeOKsOKtOK_OKmOKiOKrOKrOKoOKrOK_OKsOKiOKnOKgOKlOKeOK_OKdOKoOKtOK OKPOKAOKSOKSOKEOKDOK
+OKtOKeOKsOKtOKsOK/OKtOKeOKsOKtOK_OKbOKrOKaOKiOKlOKlOKeOK_OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKpOKyOK:OK:OKTOKeOKsOKtOKBOKrOKaOKiOKlOKlOKeOKMOKiOKrOKrOKoOKrOK:OK:OKtOKeOKsOKtOK_OKmOKiOKrOKrOKoOKrOK_OKmOKuOKlOKtOKiOKpOKlOKeOK_OKdOKoOKtOKsOK OKPOKAOKSOKSOKEOKDOK
+OKtOKeOKsOKtOKsOK/OKtOKeOKsOKtOK_OKbOKrOKaOKiOKlOKlOKeOK_OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKpOKyOK:OK:OKTOKeOKsOKtOKBOKrOKaOKiOKlOKlOKeOKMOKiOKrOKrOKoOKrOK:OK:OKtOKeOKsOKtOK_OKdOKoOKuOKbOKlOKeOK_OKmOKiOKrOKrOKoOKrOK_OKrOKeOKtOKuOKrOKnOKsOK_OKoOKrOKiOKgOKiOKnOKaOKlOK OKPOKAOKSOKSOKEOKDOK
+OKtOKeOKsOKtOKsOK/OKtOKeOKsOKtOK_OKbOKrOKaOKiOKlOKlOKeOK_OKcOKoOKnOKvOKeOKrOKtOKeOKrOK.OKpOKyOK:OK:OKTOKeOKsOKtOKBOKrOKaOKiOKlOKlOKeOKMOKiOKrOKrOKoOKrOK:OK:OKtOKeOKsOKtOK_OKmOKiOKrOKrOKoOKrOK_OKfOKuOKlOKlOK_OKcOKeOKlOKlOK OKPOKAOKSOKSOKEOKDOK
+OK
+OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK OK7OK1OK OKpOKaOKsOKsOKeOKdOK OKiOKnOK OK0OK.OK0OK7OKsOK OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK=OK
+OK`OK`OK`OK
+OK
+OK-OK-OK-OK
+OK
+OK#OK#OK OKCOKoOKnOKcOKlOKuOKsOKiOKoOKnOKeOKsOK
+OK
+OK‚OKúOKÖOK OK*OK*OKTOKoOKdOKoOKsOK OKlOKoOKsOK OKtOKeOKsOKtOKsOK OKpOKaOKsOKaOKnOK OKeOKxOKiOKtOKoOKsOKaOKmOKeOKnOKtOKeOK*OK*OK
+OK
+OK-OK OK7OK1OK OKtOKeOKsOKtOKsOK OKeOKnOK OKtOKoOKtOKaOKlOK
+OK-OK OK4OK2OK OKtOKeOKsOKtOKsOK OKnOKuOKeOKvOKoOKsOK OKpOKaOKrOKaOK OKlOKaOK OKsOKeOKgOKuOKnOKdOKaOK OKiOKtOKeOKrOKaOKcOKiOK√OK≥OKnOK
+OK-OK OKCOKoOKbOKeOKrOKtOKuOKrOKaOK OKcOKoOKmOKpOKlOKeOKtOKaOK OKdOKeOK OKnOKuOKeOKvOKaOKsOK OKfOKuOKnOKcOKiOKoOKnOKaOKlOKiOKdOKaOKdOKeOKsOK
+OK-OK OKTOKiOKeOKmOKpOKoOK OKdOKeOK OKeOKjOKeOKcOKuOKcOKiOK√OK≥OKnOK:OK OK~OK0OK.OK0OK7OK OKsOKeOKgOKuOKnOKdOKoOKsOK

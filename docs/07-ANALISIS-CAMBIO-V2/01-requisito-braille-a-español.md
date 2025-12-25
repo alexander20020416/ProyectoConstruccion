@@ -176,7 +176,7 @@ El sistema ahora detecta y reporta:
 
 ## Resultado
 
-✅ **Requisito completado exitosamente**
+**Requisito completado exitosamente**
 
 El sistema ahora permite:
 1. Ingresar secuencias Braille usando una celda interactiva

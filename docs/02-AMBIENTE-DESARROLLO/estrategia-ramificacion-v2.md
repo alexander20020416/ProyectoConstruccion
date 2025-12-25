@@ -84,16 +84,16 @@ main ─────────────────────────
 ## Proceso de Integración
 
 ### Paso 1: Finalizar desarrollo en develop-v2
-✅ **Completado** - 12 commits realizados
+**Completado** - 12 commits realizados
 
-### Paso 2: Documentación en documentacion-v2
-🔄 **En progreso** - Documentos de análisis de cambio
+### Paso 2: Documentacion en documentacion-v2
+**En progreso** - Documentos de analisis de cambio
 
-### Paso 3: Merge develop-v2 → main
-⏳ **Pendiente** - Después de aprobación
+### Paso 3: Merge develop-v2 a main
+**Pendiente** - Despues de aprobacion
 
-### Paso 4: Tag de versión
-⏳ **Pendiente** - v2.0.0
+### Paso 4: Tag de version
+**Pendiente** - v2.0.0
 
 ## Comandos Utilizados
 
@@ -153,12 +153,12 @@ git push origin main
 
 ## Protección de Ramas
 
-| Rama | Protección | Commits Directos |
+| Rama | Proteccion | Commits Directos |
 |------|------------|------------------|
-| main | Alta | ❌ No permitidos |
+| main | Alta | No permitidos |
 | develop | Media | Solo fixes menores |
 | develop-v2 | Media | Solo fixes menores |
-| documentacion-v2 | Baja | ✅ Permitidos |
+| documentacion-v2 | Baja | Permitidos |
 
 ## Historial de Versiones
 

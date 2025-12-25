@@ -194,8 +194,8 @@ def generate_text_pdf_mirror(self, text: str, filename: str = None) -> str:
     """
 ```
 
-**Características del PDF en espejo:**
-- Título: "🪞 MODO ESPEJO - Para escritura manual con punzón"
+**Caracteristicas del PDF en espejo:**
+- Titulo: "MODO ESPEJO - Para escritura manual con punzon"
 - Subtítulo: "Texto invertido: escribir de derecha a izquierda"
 - Celdas Braille espejadas y en orden invertido
 - Nota al pie explicativa
@@ -242,7 +242,7 @@ def generate_text_pdf_mirror(self, text: str, filename: str = None) -> str:
 ```html
 <!-- Selector de modo PDF -->
 <div class="pdf-mode-selector">
-    <label>📄 Tipo de PDF:</label>
+    <label>Tipo de PDF:</label>
     <div class="radio-group">
         <label class="radio-option">
             <input type="radio" name="pdf-mode" value="normal" checked>
@@ -254,7 +254,7 @@ def generate_text_pdf_mirror(self, text: str, filename: str = None) -> str:
         <label class="radio-option">
             <input type="radio" name="pdf-mode" value="mirror">
             <span class="radio-label">
-                <strong>🪞 Espejo</strong>
+                <strong>Espejo</strong>
                 <small>Para escritura manual con punzón y regleta</small>
             </span>
         </label>

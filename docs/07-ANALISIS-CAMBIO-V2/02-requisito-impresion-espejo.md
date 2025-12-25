@@ -128,18 +128,18 @@ Características:
 Interfaz con radio buttons para seleccionar el tipo de PDF:
 
 ```
-┌─────────────────────────────────────────┐
-│  📄 Tipo de PDF:                        │
-│                                         │
-│  ○ Normal                               │
-│    Para lectura e impresión directa     │
-│                                         │
-│  ○ 🪞 Espejo                            │
-│    Para escritura manual con punzón     │
-│    y regleta                            │
-│                                         │
-│  [Descargar PDF]                        │
-└─────────────────────────────────────────┘
++------------------------------------------+
+|  Tipo de PDF:                            |
+|                                          |
+|  o Normal                                |
+|    Para lectura e impresion directa      |
+|                                          |
+|  o Espejo                                |
+|    Para escritura manual con punzon      |
+|    y regleta                             |
+|                                          |
+|  [Descargar PDF]                         |
++------------------------------------------+
 ```
 
 ### 3. Archivos Modificados
@@ -275,7 +275,7 @@ AL VOLTEAR LA HOJA:
 
 ## Resultado
 
-✅ **Requisito completado exitosamente**
+**Requisito completado exitosamente**
 
 El sistema ahora permite:
 1. Seleccionar entre modo Normal y Espejo para generación de PDF
